@@ -1,0 +1,52 @@
+<div class="app-shell">
+  <header class="navbar navbar-dark bg-dark fixed-top px-3 shadow-sm">
+    <button
+      class="navbar-toggler d-lg-none"
+      type="button"
+      aria-label="Toggle navigation"
+      [attr.aria-expanded]="sidebarOpen()"
+      (click)="toggleSidebar()"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <a class="navbar-brand fw-semibold" routerLink="/dashboard">Tailor</a>
+    <div class="d-flex align-items-center gap-3 text-white">
+      @if (user(); as currentUser) {
+        <span class="d-none d-sm-inline small">{{ currentUser.name }}</span>
+      }
+      <button
+        class="btn btn-sm btn-outline-light"
+        type="button"
+        [disabled]="signingOut()"
+        (click)="signOut()"
+      >
+        {{ signingOut() ? 'Signing out…' : 'Sign out' }}
+      </button>
+    </div>
+  </header>
+
+  @if (sidebarOpen()) {
+    <button
+      class="sidebar-backdrop d-lg-none"
+      aria-label="Close navigation"
+      (click)="closeSidebar()"
+    ></button>
+  }
+
+  <aside class="sidebar bg-white border-end" [class.sidebar-open]="sidebarOpen()">
+    <nav class="nav nav-pills flex-column gap-1 p-3" aria-label="Primary navigation">
+      <a
+        class="nav-link"
+        routerLink="/dashboard"
+        routerLinkActive="active"
+        (click)="closeSidebar()"
+      >
+        Dashboard
+      </a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <router-outlet />
+  </main>
+</div>

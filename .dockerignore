@@ -1,0 +1,10 @@
+.angular
+.git
+.github
+.vscode
+coverage
+dist
+node_modules
+playwright-report
+test-results
+npm-debug.log*

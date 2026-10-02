@@ -1,0 +1,25 @@
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+}
+
+html {
+  min-width: 320px;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #f6f8fb;
+  min-height: 100vh;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  &:focus-visible {
+    outline: 3px solid rgb(13 110 253 / 35%);
+    outline-offset: 2px;
+  }
+}

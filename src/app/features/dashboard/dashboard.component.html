@@ -1,0 +1,22 @@
+<div class="container-fluid px-0">
+  <header class="mb-4">
+    <p class="text-uppercase text-primary fw-semibold small mb-1">Overview</p>
+    <h1 class="h2 mb-2">Welcome, {{ user()?.name ?? 'there' }}</h1>
+    <p class="text-body-secondary mb-0">
+      The frontend foundation is connected and ready for feature development.
+    </p>
+  </header>
+
+  <div class="row g-3">
+    @for (item of ['Customers', 'Orders', 'Appointments', 'Payments']; track item) {
+      <div class="col-12 col-sm-6 col-xl-3">
+        <article class="card h-100 border-0 shadow-sm">
+          <div class="card-body">
+            <p class="text-body-secondary small mb-2">{{ item }}</p>
+            <p class="h4 mb-0">—</p>
+          </div>
+        </article>
+      </div>
+    }
+  </div>
+</div>
