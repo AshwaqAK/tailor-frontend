@@ -1,0 +1,318 @@
+<div class="container-fluid px-0">
+  <header
+    class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-start gap-3 mb-4"
+  >
+    <div>
+      <p class="text-uppercase text-primary fw-semibold small mb-1">Customer records</p>
+      <h1 class="h2 mb-1">Customers</h1>
+      <p class="text-body-secondary mb-0">Find and manage customer contact information.</p>
+    </div>
+    @if (canCreate()) {
+      <a class="btn btn-primary" routerLink="new" [queryParams]="customerQueryParams()">
+        Add customer
+      </a>
+    }
+  </header>
+
+  @if (feedback(); as message) {
+    <div class="alert alert-success" role="status">{{ message }}</div>
+  }
+
+  @if (error(); as errorMessage) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ errorMessage }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
+        Try again
+      </button>
+    </div>
+  }
+
+  <section class="card border-0 shadow-sm mb-4" aria-label="Customer filters">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="customer-search">Search customers</label>
+          <input
+            id="customer-search"
+            class="form-control"
+            type="search"
+            maxlength="100"
+            autocomplete="off"
+            placeholder="Name, phone, or customer ID"
+            [formControl]="searchControl"
+          />
+        </div>
+        <div class="col-7 col-sm-5 col-lg-3">
+          <label class="form-label" for="customer-status">Status</label>
+          <select
+            id="customer-status"
+            class="form-select"
+            [value]="currentQuery().isActive === undefined ? '' : currentQuery().isActive"
+            (change)="setStatus($any($event.target).value)"
+          >
+            <option value="">All customers</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+        </div>
+        <div class="col-5 col-sm-3 col-lg-2">
+          <label class="form-label" for="page-size">Per page</label>
+          <select
+            id="page-size"
+            class="form-select"
+            [value]="currentQuery().limit"
+            (change)="setLimit($any($event.target).value)"
+          >
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-4 col-lg-1 d-grid">
+          <button class="btn btn-outline-secondary" type="button" (click)="clearFilters()">
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading customers…</p>
+      </div>
+    </div>
+  } @else if (!error() && customers().length === 0) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h2 class="h5">No customers found</h2>
+        <p class="text-body-secondary mb-3">
+          @if (currentQuery().search || currentQuery().isActive !== undefined) {
+            Try adjusting or clearing the current filters.
+          } @else {
+            Customer records will appear here once they are added.
+          }
+        </p>
+        @if (currentQuery().search || currentQuery().isActive !== undefined) {
+          <button class="btn btn-outline-primary" type="button" (click)="clearFilters()">
+            Clear filters
+          </button>
+        } @else if (canCreate()) {
+          <a class="btn btn-primary" routerLink="new">Add first customer</a>
+        }
+      </div>
+    </div>
+  } @else if (!error()) {
+    <section class="card border-0 shadow-sm overflow-hidden" aria-label="Customer results">
+      <div class="table-responsive d-none d-md-block">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col" [attr.aria-sort]="sortIndicator('customerId') || null">
+                <button class="sort-button" type="button" (click)="sortBy('customerId')">
+                  Customer ID
+                </button>
+              </th>
+              <th scope="col" [attr.aria-sort]="sortIndicator('name') || null">
+                <button class="sort-button" type="button" (click)="sortBy('name')">Name</button>
+              </th>
+              <th scope="col" [attr.aria-sort]="sortIndicator('phone') || null">
+                <button class="sort-button" type="button" (click)="sortBy('phone')">Phone</button>
+              </th>
+              <th scope="col">Status</th>
+              <th scope="col" [attr.aria-sort]="sortIndicator('createdAt') || null">
+                <button class="sort-button" type="button" (click)="sortBy('createdAt')">
+                  Created
+                </button>
+              </th>
+              <th scope="col" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (customer of customers(); track customer._id) {
+              <tr>
+                <td class="fw-semibold">{{ customer.customerId }}</td>
+                <td>
+                  <a [routerLink]="[customer._id]" [queryParams]="customerQueryParams()">{{
+                    customer.name
+                  }}</a>
+                </td>
+                <td>{{ customer.phone }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.text-bg-success]="customer.isActive"
+                    [class.text-bg-secondary]="!customer.isActive"
+                  >
+                    {{ customer.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td>{{ customer.createdAt | date: 'mediumDate' }}</td>
+                <td>
+                  <div class="d-flex justify-content-end gap-2">
+                    <a
+                      class="btn btn-sm btn-outline-primary action-control"
+                      [routerLink]="[customer._id]"
+                      [queryParams]="customerQueryParams()"
+                      >View</a
+                    >
+                    @if (canManage()) {
+                      <a
+                        class="btn btn-sm btn-outline-secondary action-control"
+                        [routerLink]="[customer._id, 'edit']"
+                        [queryParams]="customerQueryParams()"
+                        >Edit</a
+                      >
+                      @if (customer.isActive) {
+                        <button
+                          class="btn btn-sm btn-outline-danger action-control"
+                          type="button"
+                          (click)="requestDeactivate(customer)"
+                        >
+                          Deactivate
+                        </button>
+                      }
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-md-none p-3">
+        @for (customer of customers(); track customer._id) {
+          <article class="customer-card border rounded p-3 mb-3">
+            <div class="d-flex justify-content-between gap-2 mb-2">
+              <div>
+                <p class="small text-body-secondary mb-1">{{ customer.customerId }}</p>
+                <h2 class="h5 mb-0">{{ customer.name }}</h2>
+              </div>
+              <span
+                class="badge align-self-start"
+                [class.text-bg-success]="customer.isActive"
+                [class.text-bg-secondary]="!customer.isActive"
+                >{{ customer.isActive ? 'Active' : 'Inactive' }}</span
+              >
+            </div>
+            <p class="mb-3">{{ customer.phone }}</p>
+            <div class="d-grid gap-2">
+              <a
+                class="btn btn-outline-primary action-control"
+                [routerLink]="[customer._id]"
+                [queryParams]="customerQueryParams()"
+                >View details</a
+              >
+              @if (canManage()) {
+                <a
+                  class="btn btn-outline-secondary action-control"
+                  [routerLink]="[customer._id, 'edit']"
+                  [queryParams]="customerQueryParams()"
+                  >Edit</a
+                >
+                @if (customer.isActive) {
+                  <button
+                    class="btn btn-outline-danger action-control"
+                    type="button"
+                    (click)="requestDeactivate(customer)"
+                  >
+                    Deactivate
+                  </button>
+                }
+              }
+            </div>
+          </article>
+        }
+      </div>
+
+      <footer
+        class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 border-top p-3"
+      >
+        <p class="text-body-secondary small mb-0">
+          Showing {{ firstResult() }}–{{ lastResult() }} of {{ meta().total }}
+        </p>
+        @if (meta().totalPages > 1) {
+          <nav aria-label="Customer result pages">
+            <ul class="pagination mb-0">
+              <li class="page-item" [class.disabled]="meta().page === 1">
+                <button
+                  class="page-link"
+                  type="button"
+                  [disabled]="meta().page === 1"
+                  (click)="goToPage(meta().page - 1)"
+                >
+                  Previous
+                </button>
+              </li>
+              @for (page of pageNumbers(); track page) {
+                <li class="page-item" [class.active]="page === meta().page">
+                  <button
+                    class="page-link"
+                    type="button"
+                    [attr.aria-current]="page === meta().page ? 'page' : null"
+                    (click)="goToPage(page)"
+                  >
+                    {{ page }}
+                  </button>
+                </li>
+              }
+              <li class="page-item" [class.disabled]="meta().page === meta().totalPages">
+                <button
+                  class="page-link"
+                  type="button"
+                  [disabled]="meta().page === meta().totalPages"
+                  (click)="goToPage(meta().page + 1)"
+                >
+                  Next
+                </button>
+              </li>
+            </ul>
+          </nav>
+        }
+      </footer>
+    </section>
+  }
+</div>
+
+<dialog
+  #deactivateDialog
+  class="confirmation-dialog"
+  aria-labelledby="deactivate-title"
+  aria-describedby="deactivate-description"
+  (close)="dialogClosed()"
+  (cancel)="dialogCancelled($event)"
+>
+  @if (deactivating(); as customer) {
+    <section>
+      <h2 id="deactivate-title" class="h4">Deactivate customer?</h2>
+      <p id="deactivate-description" class="text-body-secondary">
+        {{ customer.name }} will remain in customer history but will no longer be active.
+      </p>
+      <div class="d-flex justify-content-end gap-2">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [disabled]="submittingDeactivate()"
+          (click)="cancelDeactivate()"
+        >
+          Cancel
+        </button>
+        <button
+          class="btn btn-danger"
+          type="button"
+          [disabled]="submittingDeactivate()"
+          (click)="confirmDeactivate()"
+        >
+          {{ submittingDeactivate() ? 'Deactivating…' : 'Deactivate' }}
+        </button>
+      </div>
+    </section>
+  }
+</dialog>

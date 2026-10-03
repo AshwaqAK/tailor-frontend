@@ -34,6 +34,11 @@ export const routes: Routes = [
           ),
         title: 'Dashboard | Tailor',
       },
+      {
+        path: 'customers',
+        loadChildren: () =>
+          import('@features/customers/customers.routes').then((routes) => routes.CUSTOMER_ROUTES),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

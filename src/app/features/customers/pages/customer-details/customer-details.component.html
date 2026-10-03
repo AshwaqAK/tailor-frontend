@@ -1,0 +1,196 @@
+<div class="container-fluid px-0">
+  <nav aria-label="Breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item">
+        <a routerLink="/customers" [queryParams]="listQueryParams">Customers</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Customer details</li>
+    </ol>
+  </nav>
+
+  @if (error(); as errorMessage) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ errorMessage }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="loadCustomer()">
+        Try again
+      </button>
+    </div>
+  }
+
+  @if (feedback(); as message) {
+    <div class="alert alert-success" role="status">{{ message }}</div>
+  }
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading customer…</p>
+      </div>
+    </div>
+  } @else if (customer(); as currentCustomer) {
+    <header
+      class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4"
+    >
+      <div class="d-flex align-items-center gap-3">
+        @if (currentCustomer.photo) {
+          <img class="customer-photo" [src]="currentCustomer.photo" alt="" />
+        } @else {
+          <div class="customer-initial" aria-hidden="true">
+            {{ currentCustomer.name.charAt(0).toUpperCase() }}
+          </div>
+        }
+        <div>
+          <p class="text-uppercase text-primary fw-semibold small mb-1">
+            {{ currentCustomer.customerId }}
+          </p>
+          <h1 class="h2 mb-1">{{ currentCustomer.name }}</h1>
+          <span
+            class="badge"
+            [class.text-bg-success]="currentCustomer.isActive"
+            [class.text-bg-secondary]="!currentCustomer.isActive"
+          >
+            {{ currentCustomer.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <button
+          class="btn btn-outline-secondary detail-action"
+          type="button"
+          (click)="backToCustomers()"
+        >
+          Back
+        </button>
+        @if (canManage()) {
+          <a
+            class="btn btn-primary detail-action"
+            [routerLink]="['edit']"
+            [queryParams]="listQueryParams"
+            >Edit</a
+          >
+          @if (currentCustomer.isActive) {
+            <button
+              class="btn btn-outline-danger detail-action"
+              type="button"
+              [disabled]="deactivating()"
+              (click)="requestDeactivate()"
+            >
+              {{ deactivating() ? 'Deactivating…' : 'Deactivate' }}
+            </button>
+          }
+        }
+      </div>
+    </header>
+
+    <div class="row g-4">
+      <div class="col-12 col-xl-8">
+        <section class="card border-0 shadow-sm h-100" aria-labelledby="contact-heading">
+          <div class="card-body p-3 p-md-4">
+            <h2 id="contact-heading" class="h5 mb-4">Contact information</h2>
+            <dl class="row mb-0 detail-list">
+              <dt class="col-sm-4">Full name</dt>
+              <dd class="col-sm-8">{{ currentCustomer.name }}</dd>
+              <dt class="col-sm-4">Mobile number</dt>
+              <dd class="col-sm-8">
+                <a [href]="'tel:' + currentCustomer.phone">{{ currentCustomer.phone }}</a>
+              </dd>
+              <dt class="col-sm-4">Alternate mobile</dt>
+              <dd class="col-sm-8">{{ currentCustomer.alternatePhone || 'Not provided' }}</dd>
+              <dt class="col-sm-4">Email</dt>
+              <dd class="col-sm-8">
+                @if (currentCustomer.email) {
+                  <a [href]="'mailto:' + currentCustomer.email">{{ currentCustomer.email }}</a>
+                } @else {
+                  Not provided
+                }
+              </dd>
+              <dt class="col-sm-4">Gender</dt>
+              <dd class="col-sm-8">{{ genderLabel(currentCustomer.gender) }}</dd>
+              <dt class="col-sm-4">Photo URL</dt>
+              <dd class="col-sm-8 text-break">{{ currentCustomer.photo || 'Not provided' }}</dd>
+              <dt class="col-sm-4">Notes</dt>
+              <dd class="col-sm-8 notes-value">{{ currentCustomer.notes || 'No notes' }}</dd>
+            </dl>
+          </div>
+        </section>
+      </div>
+      <div class="col-12 col-xl-4">
+        <section class="card border-0 shadow-sm mb-4" aria-labelledby="record-heading">
+          <div class="card-body p-3 p-md-4">
+            <h2 id="record-heading" class="h5 mb-4">Record details</h2>
+            <dl class="mb-0 detail-list">
+              <dt>Customer ID</dt>
+              <dd>{{ currentCustomer.customerId }}</dd>
+              <dt>Created</dt>
+              <dd>{{ currentCustomer.createdAt | date: 'medium' }}</dd>
+              <dt>Last updated</dt>
+              <dd>{{ currentCustomer.updatedAt | date: 'medium' }}</dd>
+            </dl>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="row g-4 mt-0">
+      <div class="col-12 col-md-6">
+        <section class="card border-0 shadow-sm h-100 placeholder-card">
+          <div class="card-body p-4">
+            <p class="text-uppercase text-primary fw-semibold small mb-2">Coming later</p>
+            <h2 class="h5">Measurements</h2>
+            <p class="text-body-secondary mb-0">
+              Measurement history will be available in a future update.
+            </p>
+          </div>
+        </section>
+      </div>
+      <div class="col-12 col-md-6">
+        <section class="card border-0 shadow-sm h-100 placeholder-card">
+          <div class="card-body p-4">
+            <p class="text-uppercase text-primary fw-semibold small mb-2">Coming later</p>
+            <h2 class="h5">Orders</h2>
+            <p class="text-body-secondary mb-0">
+              Order history will be available in a future update.
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+  }
+</div>
+
+<dialog
+  #deactivateDialog
+  class="confirmation-dialog"
+  aria-labelledby="detail-deactivate-title"
+  aria-describedby="detail-deactivate-description"
+  (cancel)="dialogCancelled($event)"
+>
+  @if (customer(); as currentCustomer) {
+    <h2 id="detail-deactivate-title" class="h4">Deactivate customer?</h2>
+    <p id="detail-deactivate-description" class="text-body-secondary">
+      {{ currentCustomer.name }} will remain in customer history but will no longer be active.
+    </p>
+    <div class="d-flex justify-content-end gap-2">
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        [disabled]="deactivating()"
+        (click)="cancelDeactivate()"
+      >
+        Cancel
+      </button>
+      <button
+        class="btn btn-danger"
+        type="button"
+        [disabled]="deactivating()"
+        (click)="confirmDeactivate()"
+      >
+        {{ deactivating() ? 'Deactivating…' : 'Deactivate' }}
+      </button>
+    </div>
+  }
+</dialog>
