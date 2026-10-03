@@ -1,0 +1,102 @@
+:host {
+  display: block;
+}
+.measurement-page {
+  padding-bottom: 5rem;
+}
+.entry-header {
+  background: var(--color-surface);
+  position: sticky;
+  top: 4.5rem;
+  z-index: 10;
+}
+.progress {
+  height: 0.65rem;
+}
+.measurement-list {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 25rem), 1fr));
+}
+.measurement-row {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border-light);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.measurement-row.active {
+  border-color: var(--color-focus);
+  box-shadow: var(--focus-ring);
+}
+.measurement-row.invalid {
+  border-color: var(--color-danger);
+}
+.field-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.formatted-value {
+  color: var(--color-primary);
+  font-size: 1.15rem;
+}
+.entry-controls {
+  align-items: end;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(7rem, 1fr) minmax(6rem, 0.75fr);
+}
+.quick-actions {
+  display: flex;
+  gap: 0.5rem;
+  grid-column: 1 / -1;
+}
+.quick-actions .btn {
+  min-height: 2.75rem;
+}
+.quick-actions .btn-link {
+  margin-left: auto;
+}
+.whole-input,
+.fraction-input {
+  min-height: 3.25rem;
+}
+.field-error {
+  color: var(--color-danger);
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+}
+.entry-action {
+  min-height: 2.75rem;
+}
+.save-footer {
+  align-items: center;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  bottom: 0;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  left: 0;
+  padding: 0.75rem 1rem;
+  position: fixed;
+  right: 0;
+  z-index: 1020;
+}
+@media (min-width: 992px) {
+  .save-footer {
+    left: 15rem;
+  }
+}
+@media (max-width: 575.98px) {
+  .save-footer .btn {
+    flex: 1;
+  }
+  .entry-header {
+    top: 4rem;
+  }
+}

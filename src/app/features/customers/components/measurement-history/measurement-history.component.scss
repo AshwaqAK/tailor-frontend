@@ -1,0 +1,16 @@
+:host {
+  display: block;
+}
+.action-control {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 2.75rem;
+}
+.measurement-card {
+  border-color: var(--color-border-light) !important;
+}
+.empty-state {
+  background: var(--color-surface-secondary);
+  border-radius: 0.5rem;
+}
