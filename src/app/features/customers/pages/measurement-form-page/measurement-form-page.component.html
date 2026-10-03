@@ -1,0 +1,242 @@
+<div class="container-fluid measurement-page px-0">
+  <nav aria-label="Breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a routerLink="/customers">Customers</a></li>
+      <li class="breadcrumb-item">
+        <a [routerLink]="['/customers', customerRecordId]">Customer details</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">
+        {{ editMode ? 'Edit measurement' : 'Add measurement' }}
+      </li>
+    </ol>
+  </nav>
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5" aria-live="polite">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="mt-3 mb-0">Loading customer…</p>
+      </div>
+    </div>
+  } @else if (loadError(); as error) {
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+  } @else if (customer(); as currentCustomer) {
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <header class="entry-header card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-4">
+              <p class="small text-body-secondary mb-1">Customer</p>
+              <h1 class="h5 mb-0">{{ currentCustomer.name }}</h1>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label fw-semibold" for="clothing-type">Clothing type</label
+              ><select
+                id="clothing-type"
+                class="form-select form-select-lg"
+                formControlName="clothingType"
+                [class.is-invalid]="
+                  form.controls.clothingType.touched && form.controls.clothingType.invalid
+                "
+              >
+                <option [ngValue]="null">Select garment</option>
+                @for (type of clothingTypes; track type) {
+                  <option [ngValue]="type">{{ label(type) }}</option>
+                }
+              </select>
+              <div class="invalid-feedback">Select a clothing type.</div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="d-flex justify-content-between small mb-2">
+                <span>Progress</span
+                ><strong>{{ completedFields() }} of {{ fields().length }}</strong>
+              </div>
+              <div
+                class="progress"
+                role="progressbar"
+                aria-label="Completed measurements"
+                [attr.aria-valuenow]="progressPercent()"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                <div class="progress-bar" [style.width.%]="progressPercent()"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      @if (serverError(); as error) {
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+      }
+
+      @if (fields().length) {
+        <section class="card border-0 shadow-sm mb-4">
+          <div class="card-body p-3 p-md-4">
+            <div
+              class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4"
+            >
+              <div>
+                <h2 class="h4 mb-1">
+                  {{ label(form.controls.clothingType.value ?? '') }} measurements
+                </h2>
+                <p class="text-body-secondary mb-0">
+                  Enter whole inches and select the nearest eighth.
+                </p>
+              </div>
+              <button
+                class="btn btn-outline-primary entry-action"
+                type="button"
+                [disabled]="copying()"
+                (click)="copyLatest()"
+              >
+                {{ copying() ? 'Copying…' : 'Copy latest' }}
+              </button>
+            </div>
+            @if (copyMessage(); as message) {
+              <div class="alert alert-info" role="status">{{ message }}</div>
+            }
+
+            <div class="measurement-list" formGroupName="measurements">
+              @for (field of fields(); track field.key; let index = $index) {
+                <article
+                  class="measurement-row"
+                  [class.active]="activeField() === field.key"
+                  [class.invalid]="fieldError(field)"
+                  [formGroupName]="field.key"
+                  (focusin)="activate(field)"
+                >
+                  <div class="field-heading">
+                    <label class="fw-semibold" [for]="'whole-' + field.key"
+                      >{{ field.label }}
+                      @if (field.required) {
+                        <span class="text-danger" aria-label="required">*</span>
+                      }</label
+                    ><strong class="formatted-value">{{ formattedValue(field) }}</strong>
+                  </div>
+                  <div class="entry-controls">
+                    <div>
+                      <label class="form-label small" [for]="'whole-' + field.key"
+                        >Whole inches</label
+                      ><input
+                        #wholeInput
+                        class="form-control form-control-lg whole-input"
+                        [id]="'whole-' + field.key"
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputmode="numeric"
+                        formControlName="whole"
+                        (keydown.enter)="focusNext(index, $event)"
+                      />
+                    </div>
+                    <div>
+                      <label class="form-label small" [for]="'fraction-' + field.key"
+                        >Fraction</label
+                      ><select
+                        class="form-select form-select-lg fraction-input"
+                        [id]="'fraction-' + field.key"
+                        formControlName="fraction"
+                      >
+                        @for (fraction of fractions; track fraction.value) {
+                          <option [ngValue]="fraction.value">{{ fraction.label }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="quick-actions" aria-label="Quick adjustments">
+                      <button
+                        class="btn btn-outline-secondary"
+                        type="button"
+                        [attr.aria-label]="'Subtract one eighth inch from ' + field.label"
+                        (click)="adjust(field, -1)"
+                      >
+                        −⅛</button
+                      ><button
+                        class="btn btn-outline-secondary"
+                        type="button"
+                        [attr.aria-label]="'Add one eighth inch to ' + field.label"
+                        (click)="adjust(field, 1)"
+                      >
+                        +⅛</button
+                      ><button
+                        class="btn btn-link text-danger"
+                        type="button"
+                        (click)="clearField(field)"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  @if (fieldError(field); as error) {
+                    <p class="field-error mb-0" role="alert">{{ error }}</p>
+                  }
+                </article>
+              }
+            </div>
+          </div>
+        </section>
+
+        <section class="card border-0 shadow-sm mb-4">
+          <div class="card-body p-3 p-md-4">
+            <h2 class="h5 mb-3">Measurement details</h2>
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="fit-preference">Fit preference</label
+                ><select id="fit-preference" class="form-select" formControlName="fitPreference">
+                  <option [ngValue]="null">Not provided</option>
+                  @for (fit of fitPreferences; track fit) {
+                    <option [ngValue]="fit">{{ label(fit) }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="measured-at">Measured at *</label
+                ><input
+                  id="measured-at"
+                  class="form-control"
+                  type="datetime-local"
+                  formControlName="measuredAt"
+                />
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="notes">Notes</label
+                ><textarea
+                  id="notes"
+                  class="form-control"
+                  rows="3"
+                  maxlength="1000"
+                  formControlName="notes"
+                ></textarea>
+                <div class="form-text text-end">{{ form.controls.notes.value.length }}/1000</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      } @else {
+        <div class="card border-0 shadow-sm">
+          <div class="card-body text-center py-5">
+            <h2 class="h5">Select a clothing type</h2>
+            <p class="text-body-secondary mb-0">Its measurement fields will appear here.</p>
+          </div>
+        </div>
+      }
+
+      <footer class="save-footer">
+        <button
+          class="btn btn-outline-secondary entry-action"
+          type="button"
+          [disabled]="submitting()"
+          (click)="cancel()"
+        >
+          Cancel</button
+        ><button
+          class="btn btn-primary entry-action"
+          type="submit"
+          [disabled]="submitting() || !fields().length"
+        >
+          {{ submitting() ? 'Saving…' : editMode ? 'Update measurement' : 'Save measurement' }}
+        </button>
+      </footer>
+    </form>
+  }
+</div>

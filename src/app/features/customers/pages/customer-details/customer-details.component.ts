@@ -17,11 +17,12 @@ import { ApiError } from '@core/api/api-error';
 import { AuthService } from '@core/auth/auth.service';
 import { Role } from '@shared/models/user.model';
 import { CustomersApiService } from '../../data-access/customers-api.service';
+import { MeasurementHistoryComponent } from '../../components/measurement-history/measurement-history.component';
 import type { Customer } from '../../models/customer.model';
 
 @Component({
   selector: 'app-customer-details',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, MeasurementHistoryComponent],
   templateUrl: './customer-details.component.html',
   styleUrl: './customer-details.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,7 +42,7 @@ export class CustomerDetailsComponent {
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly deactivating = signal(false);
-  readonly feedback = signal<string | null>(null);
+  readonly feedback = signal<string | null>(this.navigationFeedback());
   readonly listQueryParams = this.route.snapshot.queryParams;
   readonly canManage = computed(() => {
     const role = this.auth.user()?.role;
@@ -52,6 +53,7 @@ export class CustomerDetailsComponent {
     this.destroyRef.onDestroy(() => {
       if (this.feedbackTimeout !== undefined) clearTimeout(this.feedbackTimeout);
     });
+    if (this.feedback()) this.feedbackTimeout = setTimeout(() => this.feedback.set(null), 10_000);
     this.loadCustomer();
   }
 
@@ -121,5 +123,10 @@ export class CustomerDetailsComponent {
 
   private messageFor(error: unknown, fallback: string): string {
     return error instanceof ApiError ? error.message : fallback;
+  }
+
+  private navigationFeedback(): string | null {
+    const state = history.state as { feedback?: unknown };
+    return typeof state.feedback === 'string' ? state.feedback : null;
   }
 }

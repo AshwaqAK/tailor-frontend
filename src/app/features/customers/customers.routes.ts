@@ -3,6 +3,7 @@ import type { Routes } from '@angular/router';
 import { roleGuard } from '@core/auth/role.guard';
 import { Role } from '@shared/models/user.model';
 import { pendingCustomerChangesGuard } from './guards/pending-customer-changes.guard';
+import { pendingMeasurementChangesGuard } from './guards/pending-measurement-changes.guard';
 
 const CREATE_ROLES = [Role.SuperAdmin, Role.Manager, Role.Receptionist] as const;
 const MANAGE_ROLES = [Role.SuperAdmin, Role.Manager] as const;
@@ -35,6 +36,34 @@ export const CUSTOMER_ROUTES: Routes = [
         (component) => component.CustomerFormPageComponent,
       ),
     title: 'Edit customer | Tailor',
+  },
+  {
+    path: ':id/measurements/new',
+    canMatch: [roleGuard(CREATE_ROLES)],
+    canDeactivate: [pendingMeasurementChangesGuard],
+    loadComponent: () =>
+      import('./pages/measurement-form-page/measurement-form-page.component').then(
+        (component) => component.MeasurementFormPageComponent,
+      ),
+    title: 'New measurement | Tailor',
+  },
+  {
+    path: ':id/measurements/:measurementId/edit',
+    canMatch: [roleGuard(CREATE_ROLES)],
+    canDeactivate: [pendingMeasurementChangesGuard],
+    loadComponent: () =>
+      import('./pages/measurement-form-page/measurement-form-page.component').then(
+        (component) => component.MeasurementFormPageComponent,
+      ),
+    title: 'Edit measurement | Tailor',
+  },
+  {
+    path: ':id/measurements/:measurementId',
+    loadComponent: () =>
+      import('./pages/measurement-details/measurement-details.component').then(
+        (component) => component.MeasurementDetailsComponent,
+      ),
+    title: 'Measurement details | Tailor',
   },
   {
     path: ':id',
