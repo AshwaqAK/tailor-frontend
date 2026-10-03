@@ -1,7 +1,7 @@
-import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
   catchError,
+  defer,
   finalize,
   firstValueFrom,
   map,
@@ -13,44 +13,41 @@ import {
 } from 'rxjs';
 import type { Observable } from 'rxjs';
 
-import { APP_CONFIG } from '@core/config/app-config';
-import type { ApiSuccess } from '@shared/models/api.model';
 import type { User } from '@shared/models/user.model';
-import type { AccessTokenResponse, LoginRequest, LogoutResponse } from './auth.models';
+import { AuthApiService } from './auth-api.service';
+import type { AuthState, LoginRequest } from './auth.models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly http = inject(HttpClient);
-  private readonly config = inject(APP_CONFIG);
-  private readonly userState = signal<User | null>(null);
+  private readonly authApi = inject(AuthApiService);
+  private readonly state = signal<AuthState>({ user: null, initialized: false, loading: false });
   private readonly tokenState = signal<string | null>(null);
+  private pendingAuthRequests = 0;
   private refreshRequest?: Observable<string>;
 
-  readonly user = this.userState.asReadonly();
+  readonly user = computed(() => this.state().user);
+  readonly initialized = computed(() => this.state().initialized);
+  readonly loading = computed(() => this.state().loading);
   readonly accessToken = this.tokenState.asReadonly();
-  readonly isAuthenticated = computed(() => this.userState() !== null);
+  readonly isAuthenticated = computed(() => this.state().user !== null);
 
   login(credentials: LoginRequest): Observable<User> {
-    return this.http
-      .post<ApiSuccess<AccessTokenResponse>>(`${this.config.apiBaseUrl}/auth/login`, credentials, {
-        withCredentials: true,
-      })
-      .pipe(
-        tap((response) => this.tokenState.set(response.data.accessToken)),
+    return this.trackLoading(
+      this.authApi.login(credentials).pipe(
+        tap((response) => this.tokenState.set(response.accessToken)),
         switchMap(() => this.loadCurrentUser()),
-      );
+      ),
+    );
   }
 
   logout(): Observable<void> {
-    return this.http
-      .post<
-        ApiSuccess<LogoutResponse>
-      >(`${this.config.apiBaseUrl}/auth/logout`, {}, { withCredentials: true })
-      .pipe(
+    return this.trackLoading(
+      this.authApi.logout().pipe(
         map(() => undefined),
         catchError(() => of(undefined)),
         tap(() => this.clearSession()),
-      );
+      ),
+    );
   }
 
   refreshAccessToken(): Observable<string> {
@@ -58,12 +55,9 @@ export class AuthService {
       return this.refreshRequest;
     }
 
-    this.refreshRequest = this.http
-      .post<
-        ApiSuccess<AccessTokenResponse>
-      >(`${this.config.apiBaseUrl}/auth/refresh`, {}, { withCredentials: true })
-      .pipe(
-        map((response) => response.data.accessToken),
+    this.refreshRequest = this.trackLoading(
+      this.authApi.refresh().pipe(
+        map((response) => response.accessToken),
         tap((token) => this.tokenState.set(token)),
         catchError((error: unknown) => {
           this.clearSession();
@@ -71,32 +65,48 @@ export class AuthService {
         }),
         finalize(() => (this.refreshRequest = undefined)),
         shareReplay({ bufferSize: 1, refCount: false }),
-      );
+      ),
+    );
 
     return this.refreshRequest;
   }
 
   restoreSession(): Promise<void> {
     return firstValueFrom(
-      this.refreshAccessToken().pipe(
-        switchMap(() => this.loadCurrentUser()),
-        map(() => undefined),
-        catchError(() => of(undefined)),
+      this.trackLoading(
+        this.refreshAccessToken().pipe(
+          switchMap(() => this.loadCurrentUser()),
+          map(() => undefined),
+          catchError(() => of(undefined)),
+          finalize(() => this.patchState({ initialized: true })),
+        ),
       ),
     );
   }
 
   clearSession(): void {
     this.tokenState.set(null);
-    this.userState.set(null);
+    this.patchState({ user: null });
   }
 
   private loadCurrentUser(): Observable<User> {
-    return this.http
-      .get<ApiSuccess<User>>(`${this.config.apiBaseUrl}/auth/me`, { withCredentials: true })
-      .pipe(
-        map((response) => response.data),
-        tap((user) => this.userState.set(user)),
+    return this.authApi.getCurrentUser().pipe(tap((user) => this.patchState({ user })));
+  }
+
+  private trackLoading<T>(request: Observable<T>): Observable<T> {
+    return defer(() => {
+      this.pendingAuthRequests += 1;
+      this.patchState({ loading: true });
+      return request.pipe(
+        finalize(() => {
+          this.pendingAuthRequests = Math.max(0, this.pendingAuthRequests - 1);
+          this.patchState({ loading: this.pendingAuthRequests > 0 });
+        }),
       );
+    });
+  }
+
+  private patchState(patch: Partial<AuthState>): void {
+    this.state.update((state) => ({ ...state, ...patch }));
   }
 }

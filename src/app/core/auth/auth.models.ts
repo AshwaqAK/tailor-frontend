@@ -16,4 +16,5 @@ export interface LogoutResponse {
 export interface AuthState {
   readonly user: User | null;
   readonly initialized: boolean;
+  readonly loading: boolean;
 }

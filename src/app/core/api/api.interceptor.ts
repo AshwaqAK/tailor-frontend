@@ -12,11 +12,12 @@ const AUTH_PATHS = ['/auth/login', '/auth/refresh'];
 export const apiInterceptor: HttpInterceptorFn = (request, next) => {
   const auth = inject(AuthService);
   const config = inject(APP_CONFIG);
-  const isApiRequest = request.url.startsWith(config.apiBaseUrl);
+  const apiBaseUrl = config.apiBaseUrl.replace(/\/+$/, '');
+  const isApiRequest = request.url === apiBaseUrl || request.url.startsWith(`${apiBaseUrl}/`);
   const isPublicAuthRequest = AUTH_PATHS.some((path) => request.url.endsWith(path));
   const token = auth.accessToken();
   const authorizedRequest =
-    isApiRequest && token
+    isApiRequest && token && !isPublicAuthRequest
       ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` }, withCredentials: true })
       : request;
 
@@ -63,6 +64,5 @@ function normalizeError(error: unknown): unknown {
     messages[0] ?? 'The request could not be completed.',
     error.status,
     messages.slice(1),
-    body?.path,
   );
 }

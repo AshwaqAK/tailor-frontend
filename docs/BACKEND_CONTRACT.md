@@ -1,6 +1,6 @@
 # Backend contract reference
 
-Snapshot reviewed from `AshwaqAK/tailor-backend` on 2026-10-02. The backend remains the source of truth.
+Snapshot reviewed from backend commit `191556b27910c92c68afe21f06ee0b431c5369ee` on 2026-10-03. The backend remains the source of truth.
 
 ## Transport
 
@@ -20,6 +20,8 @@ Snapshot reviewed from `AshwaqAK/tailor-backend` on 2026-10-02. The backend rema
 | POST   | `/auth/logout`  | Revokes refresh state and clears the cookie                           |
 
 Roles are `SUPER_ADMIN`, `MANAGER`, `RECEPTIONIST`, and `TAILOR`. Protected calls use `Authorization: Bearer <access-token>`.
+
+The access token defaults to a 15-minute lifetime. The refresh token defaults to seven days, is rotated on every refresh, and is stored by the backend as a bcrypt hash. Its cookie defaults to `refreshToken`, `HttpOnly`, `SameSite=Lax`, and path `/api/v1/auth`. The cookie has no explicit `Max-Age` or `Expires`, so browsers treat it as a session cookie even though the JWT can remain valid longer.
 
 ## Current resources
 

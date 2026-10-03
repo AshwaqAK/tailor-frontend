@@ -6,8 +6,6 @@ export interface ApiSuccess<T> {
 export interface ApiErrorBody {
   readonly success: false;
   readonly message: string | readonly string[];
-  readonly statusCode?: number;
-  readonly path?: string;
 }
 
 export interface PageMeta {

@@ -41,7 +41,11 @@ export class LoginComponent {
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
         next: () => {
-          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/dashboard';
+          const requestedUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+          const returnUrl =
+            requestedUrl?.startsWith('/') && !requestedUrl.startsWith('//')
+              ? requestedUrl
+              : '/dashboard';
           void this.router.navigateByUrl(returnUrl);
         },
         error: (error: unknown) => {

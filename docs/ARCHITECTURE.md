@@ -21,9 +21,9 @@ src/app/
 
 ## Authentication
 
-The backend returns a short-lived access token in the response body and rotates a refresh token in an HttpOnly cookie. The frontend keeps the access token in memory only. On startup it calls the refresh endpoint with credentials, then loads the current user. The HTTP interceptor attaches the bearer token and performs a single shared refresh when concurrent authenticated requests receive `401`.
+The backend returns a short-lived access token in the response body and rotates a refresh token in an HttpOnly cookie. `AuthApiService` owns the exact backend calls while `AuthService` owns signal-based session state. The frontend keeps the access token and current user in memory only. On startup it calls the refresh endpoint with credentials, then loads the current user. The HTTP interceptor attaches the bearer token and performs a single shared refresh when concurrent authenticated requests receive `401`.
 
-This avoids placing tokens in `localStorage` while preserving sessions across page reloads.
+This avoids placing tokens in `localStorage` or `sessionStorage` while preserving sessions across page reloads. Authentication guards send anonymous users to login with an internal return URL; role guards send authenticated users without a required backend-defined role to the unauthorized page. Backend authorization remains authoritative.
 
 ## Configuration
 

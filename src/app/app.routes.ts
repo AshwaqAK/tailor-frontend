@@ -13,6 +13,15 @@ export const routes: Routes = [
     title: 'Sign in | Tailor',
   },
   {
+    path: 'unauthorized',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('@features/errors/unauthorized.component').then(
+        (component) => component.UnauthorizedComponent,
+      ),
+    title: 'Access denied | Tailor',
+  },
+  {
     path: '',
     component: AppShellComponent,
     canActivate: [authGuard],
