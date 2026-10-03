@@ -1,6 +1,102 @@
+@use 'sass:color';
+@use 'styles/palette' as palette;
+
+// Bootstrap is compiled from the same semantic palette as the application.
+$primary: palette.$primary;
+$secondary: palette.$text-secondary;
+$success: palette.$success;
+$info: palette.$information;
+$warning: palette.$warning;
+$danger: palette.$danger;
+$light: palette.$surface-secondary;
+$dark: palette.$primary;
+$body-bg: palette.$background;
+$body-color: palette.$text-primary;
+$body-secondary-color: palette.$text-secondary;
+$body-tertiary-color: palette.$text-muted;
+$border-color: palette.$border;
+$border-color-translucent: color.change(palette.$text-primary, $alpha: 0.12);
+$link-color: palette.$primary;
+$link-hover-color: palette.$primary-hover;
+$component-active-bg: palette.$primary;
+$focus-ring-color: color.change(palette.$focus, $alpha: 0.3);
+$input-focus-border-color: palette.$focus;
+$input-focus-box-shadow: 0 0 0 0.2rem color.change(palette.$focus, $alpha: 0.18);
+$border-radius: 0.5rem;
+$border-radius-sm: 0.375rem;
+$border-radius-lg: 0.75rem;
+$box-shadow-sm: 0 0.125rem 0.375rem color.change(palette.$text-primary, $alpha: 0.08);
+$box-shadow: 0 0.5rem 1.25rem color.change(palette.$text-primary, $alpha: 0.1);
+$box-shadow-lg: 0 1rem 2.5rem color.change(palette.$text-primary, $alpha: 0.12);
+$navbar-dark-color: palette.$surface;
+$navbar-dark-hover-color: palette.$accent-soft;
+$navbar-dark-active-color: palette.$surface;
+$card-bg: palette.$surface;
+$card-border-color: palette.$border-light;
+
+@use 'bootstrap/scss/bootstrap' with (
+  $primary: $primary,
+  $secondary: $secondary,
+  $success: $success,
+  $info: $info,
+  $warning: $warning,
+  $danger: $danger,
+  $light: $light,
+  $dark: $dark,
+  $body-bg: $body-bg,
+  $body-color: $body-color,
+  $body-secondary-color: $body-secondary-color,
+  $body-tertiary-color: $body-tertiary-color,
+  $border-color: $border-color,
+  $border-color-translucent: $border-color-translucent,
+  $link-color: $link-color,
+  $link-hover-color: $link-hover-color,
+  $component-active-bg: $component-active-bg,
+  $focus-ring-color: $focus-ring-color,
+  $input-focus-border-color: $input-focus-border-color,
+  $input-focus-box-shadow: $input-focus-box-shadow,
+  $border-radius: $border-radius,
+  $border-radius-sm: $border-radius-sm,
+  $border-radius-lg: $border-radius-lg,
+  $box-shadow-sm: $box-shadow-sm,
+  $box-shadow: $box-shadow,
+  $box-shadow-lg: $box-shadow-lg,
+  $navbar-dark-color: $navbar-dark-color,
+  $navbar-dark-hover-color: $navbar-dark-hover-color,
+  $navbar-dark-active-color: $navbar-dark-active-color,
+  $card-bg: $card-bg,
+  $card-border-color: $card-border-color
+);
+
 :root {
   color-scheme: light;
   font-synthesis: none;
+
+  --color-primary: #{palette.$primary};
+  --color-primary-hover: #{palette.$primary-hover};
+  --color-primary-soft: #{palette.$primary-soft};
+  --color-accent: #{palette.$accent};
+  --color-accent-hover: #{palette.$accent-hover};
+  --color-accent-soft: #{palette.$accent-soft};
+  --color-background: #{palette.$background};
+  --color-surface: #{palette.$surface};
+  --color-surface-secondary: #{palette.$surface-secondary};
+  --color-text-primary: #{palette.$text-primary};
+  --color-text-secondary: #{palette.$text-secondary};
+  --color-text-muted: #{palette.$text-muted};
+  --color-border: #{palette.$border};
+  --color-border-light: #{palette.$border-light};
+  --color-success: #{palette.$success};
+  --color-warning: #{palette.$warning};
+  --color-danger: #{palette.$danger};
+  --color-information: #{palette.$information};
+  --color-focus: #{palette.$focus};
+  --color-on-primary: #{palette.$surface};
+  --color-on-accent: #{palette.$text-primary};
+  --color-overlay: #{color.change(palette.$text-primary, $alpha: 0.45)};
+  --color-primary-glow: #{color.change(palette.$primary, $alpha: 0.12)};
+  --focus-ring: 0 0 0 0.2rem #{color.change(palette.$focus, $alpha: 0.3)};
+  --shadow-subtle: 0 0.25rem 0.75rem #{color.change(palette.$text-primary, $alpha: 0.08)};
 }
 
 html {
@@ -9,8 +105,37 @@ html {
 }
 
 body {
-  background: #f6f8fb;
+  background: var(--color-background);
+  color: var(--color-text-primary);
   min-height: 100vh;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--color-primary);
+  --bs-btn-border-color: var(--color-primary);
+  --bs-btn-color: var(--color-on-primary);
+  --bs-btn-hover-bg: var(--color-primary-hover);
+  --bs-btn-hover-border-color: var(--color-primary-hover);
+  --bs-btn-hover-color: var(--color-on-primary);
+  --bs-btn-active-bg: var(--color-primary-hover);
+  --bs-btn-active-border-color: var(--color-primary-hover);
+  --bs-btn-active-color: var(--color-on-primary);
+  --bs-btn-focus-shadow-rgb:
+    #{color.channel(palette.$focus, 'red', $space: rgb)},
+    #{color.channel(palette.$focus, 'green', $space: rgb)},
+    #{color.channel(palette.$focus, 'blue', $space: rgb)};
+}
+
+.btn-accent {
+  --bs-btn-bg: var(--color-accent);
+  --bs-btn-border-color: var(--color-accent);
+  --bs-btn-color: var(--color-on-accent);
+  --bs-btn-hover-bg: var(--color-accent);
+  --bs-btn-hover-border-color: var(--color-accent-hover);
+  --bs-btn-hover-color: var(--color-on-accent);
+  --bs-btn-active-bg: var(--color-accent);
+  --bs-btn-active-border-color: var(--color-accent-hover);
+  --bs-btn-active-color: var(--color-on-accent);
 }
 
 button,
@@ -19,7 +144,7 @@ input,
 select,
 textarea {
   &:focus-visible {
-    outline: 3px solid rgb(13 110 253 / 35%);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
 }

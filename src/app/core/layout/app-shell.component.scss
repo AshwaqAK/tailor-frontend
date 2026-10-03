@@ -6,8 +6,13 @@
 }
 
 .navbar {
+  border-bottom: 2px solid var(--color-accent);
   min-height: var(--header-height);
   z-index: 1040;
+}
+
+.navbar-brand {
+  color: var(--color-on-primary);
 }
 
 .sidebar {
@@ -27,7 +32,7 @@
 }
 
 .sidebar-backdrop {
-  background: rgb(0 0 0 / 45%);
+  background: var(--color-overlay);
   border: 0;
   inset: var(--header-height) 0 0;
   position: fixed;
