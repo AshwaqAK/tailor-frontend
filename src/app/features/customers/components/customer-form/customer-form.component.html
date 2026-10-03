@@ -1,0 +1,153 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  @if (serverError(); as error) {
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+  }
+
+  <div class="row g-3">
+    <div class="col-12 col-md-6">
+      <label class="form-label" for="customer-name"
+        >Full name <span aria-hidden="true">*</span></label
+      >
+      <input
+        id="customer-name"
+        class="form-control"
+        type="text"
+        maxlength="100"
+        autocomplete="name"
+        formControlName="name"
+        [class.is-invalid]="errorFor('name')"
+        [attr.aria-describedby]="errorFor('name') ? 'name-error' : null"
+      />
+      @if (errorFor('name'); as error) {
+        <div id="name-error" class="invalid-feedback">{{ error }}</div>
+      }
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="form-label" for="customer-phone"
+        >Mobile number <span aria-hidden="true">*</span></label
+      >
+      <input
+        id="customer-phone"
+        class="form-control"
+        type="tel"
+        maxlength="14"
+        autocomplete="tel"
+        inputmode="tel"
+        formControlName="phone"
+        placeholder="9876543210"
+        [class.is-invalid]="errorFor('phone')"
+        [attr.aria-describedby]="errorFor('phone') ? 'phone-help phone-error' : 'phone-help'"
+      />
+      <div id="phone-help" class="form-text">Indian mobile number beginning with 6–9.</div>
+      @if (errorFor('phone'); as error) {
+        <div id="phone-error" class="invalid-feedback">{{ error }}</div>
+      }
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="form-label" for="customer-alternate-phone">Alternate mobile</label>
+      <input
+        id="customer-alternate-phone"
+        class="form-control"
+        type="tel"
+        maxlength="14"
+        inputmode="tel"
+        formControlName="alternatePhone"
+        [class.is-invalid]="errorFor('alternatePhone')"
+        [attr.aria-describedby]="errorFor('alternatePhone') ? 'alternate-phone-error' : null"
+      />
+      @if (errorFor('alternatePhone'); as error) {
+        <div id="alternate-phone-error" class="invalid-feedback">{{ error }}</div>
+      }
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="form-label" for="customer-email">Email</label>
+      <input
+        id="customer-email"
+        class="form-control"
+        type="email"
+        maxlength="255"
+        autocomplete="email"
+        formControlName="email"
+        [class.is-invalid]="errorFor('email')"
+        [attr.aria-describedby]="errorFor('email') ? 'email-error' : null"
+      />
+      @if (errorFor('email'); as error) {
+        <div id="email-error" class="invalid-feedback">{{ error }}</div>
+      }
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="form-label" for="customer-gender">Gender</label>
+      <select
+        id="customer-gender"
+        class="form-select"
+        formControlName="gender"
+        [class.is-invalid]="errorFor('gender')"
+      >
+        <option value="">Use default</option>
+        @for (gender of genders; track gender.value) {
+          <option [value]="gender.value">{{ gender.label }}</option>
+        }
+      </select>
+      @if (errorFor('gender'); as error) {
+        <div class="invalid-feedback">{{ error }}</div>
+      }
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="form-label" for="customer-photo">Photo URL</label>
+      <input
+        id="customer-photo"
+        class="form-control"
+        type="text"
+        formControlName="photo"
+        [class.is-invalid]="errorFor('photo')"
+        [attr.aria-describedby]="errorFor('photo') ? 'photo-error' : null"
+      />
+      @if (errorFor('photo'); as error) {
+        <div id="photo-error" class="invalid-feedback">{{ error }}</div>
+      }
+    </div>
+
+    <div class="col-12">
+      <label class="form-label" for="customer-notes">Notes</label>
+      <textarea
+        id="customer-notes"
+        class="form-control"
+        rows="5"
+        maxlength="1000"
+        formControlName="notes"
+        [class.is-invalid]="errorFor('notes')"
+        [attr.aria-describedby]="errorFor('notes') ? 'notes-error' : 'notes-count'"
+      ></textarea>
+      <div id="notes-count" class="form-text text-end">
+        {{ form.controls.notes.value.length }}/1000
+      </div>
+      @if (errorFor('notes'); as error) {
+        <div id="notes-error" class="invalid-feedback">{{ error }}</div>
+      }
+    </div>
+  </div>
+
+  <div
+    class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top mt-4 pt-4"
+  >
+    <button
+      class="btn btn-outline-secondary form-action"
+      type="button"
+      [disabled]="submitting()"
+      (click)="cancel()"
+    >
+      Cancel
+    </button>
+    <button class="btn btn-primary form-action" type="submit" [disabled]="submitting()">
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      }
+      {{ submitting() ? 'Saving…' : 'Save customer' }}
+    </button>
+  </div>
+</form>

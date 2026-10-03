@@ -1,0 +1,39 @@
+:host {
+  display: block;
+}
+
+.sort-button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  min-height: 2.75rem;
+  padding: 0;
+}
+
+.action-control {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 2.75rem;
+}
+
+.customer-card {
+  background: var(--color-surface);
+  border-color: var(--color-border-light) !important;
+}
+
+.confirmation-dialog {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-subtle);
+  max-width: 30rem;
+  padding: 1.5rem;
+  width: 100%;
+
+  &::backdrop {
+    background: var(--color-overlay);
+  }
+}
