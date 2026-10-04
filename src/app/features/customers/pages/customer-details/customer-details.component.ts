@@ -18,11 +18,12 @@ import { AuthService } from '@core/auth/auth.service';
 import { Role } from '@shared/models/user.model';
 import { CustomersApiService } from '../../data-access/customers-api.service';
 import { MeasurementHistoryComponent } from '../../components/measurement-history/measurement-history.component';
+import { CustomerOrderHistoryComponent } from '../../components/customer-order-history/customer-order-history.component';
 import type { Customer } from '../../models/customer.model';
 
 @Component({
   selector: 'app-customer-details',
-  imports: [DatePipe, RouterLink, MeasurementHistoryComponent],
+  imports: [DatePipe, RouterLink, MeasurementHistoryComponent, CustomerOrderHistoryComponent],
   templateUrl: './customer-details.component.html',
   styleUrl: './customer-details.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -78,6 +79,28 @@ export class CustomerDetailsComponent {
     if (!customer || this.deactivating()) return;
     this.error.set(null);
     this.deactivateDialog()?.nativeElement.showModal();
+  }
+
+  activate(): void {
+    const customer = this.customer();
+    if (!customer || this.deactivating() || !window.confirm(`Reactivate ${customer.name}?`)) return;
+    this.deactivating.set(true);
+    this.error.set(null);
+    this.api
+      .activate(customer._id)
+      .pipe(
+        finalize(() => this.deactivating.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (updated) => {
+          this.customer.set(updated);
+          this.feedback.set(`${updated.name} was reactivated.`);
+          this.feedbackTimeout = setTimeout(() => this.feedback.set(null), 10_000);
+        },
+        error: (error: unknown) =>
+          this.error.set(this.messageFor(error, 'Customer could not be reactivated.')),
+      });
   }
 
   cancelDeactivate(): void {

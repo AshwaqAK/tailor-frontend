@@ -1,0 +1,27 @@
+:host {
+  display: block;
+}
+dt {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+dd {
+  margin-bottom: 1rem;
+}
+.measurement-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+.measurement-grid div {
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+}
+.measurement-grid span {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}

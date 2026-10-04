@@ -185,6 +185,25 @@ export class CustomerListComponent {
     this.deactivateDialog()?.nativeElement.showModal();
   }
 
+  activateCustomer(customer: Customer): void {
+    if (this.submittingDeactivate() || !window.confirm(`Reactivate ${customer.name}?`)) return;
+    this.submittingDeactivate.set(true);
+    this.error.set(null);
+    this.api
+      .activate(customer._id)
+      .pipe(
+        finalize(() => this.submittingDeactivate.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.showFeedback(`${customer.name} was reactivated.`);
+          this.retry();
+        },
+        error: (error: unknown) => this.error.set(this.errorMessage(error)),
+      });
+  }
+
   cancelDeactivate(): void {
     if (!this.submittingDeactivate()) this.deactivateDialog()?.nativeElement.close();
   }

@@ -32,6 +32,10 @@ export class CustomersApiService {
     return this.api.get<Customer>(`customers/${encodeURIComponent(id)}`);
   }
 
+  getByCustomerId(customerId: string): Observable<Customer> {
+    return this.api.get<Customer>(`customers/by-customer-id/${encodeURIComponent(customerId)}`);
+  }
+
   create(request: CreateCustomerRequest): Observable<Customer> {
     return this.api.post<Customer, CreateCustomerRequest>('customers', request);
   }
@@ -46,6 +50,13 @@ export class CustomersApiService {
   deactivate(id: string): Observable<Customer> {
     return this.api.patch<Customer, Record<string, never>>(
       `customers/${encodeURIComponent(id)}/status`,
+      {},
+    );
+  }
+
+  activate(id: string): Observable<Customer> {
+    return this.api.patch<Customer, Record<string, never>>(
+      `customers/${encodeURIComponent(id)}/activate`,
       {},
     );
   }
