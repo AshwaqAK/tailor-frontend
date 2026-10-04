@@ -1,0 +1,14 @@
+:host {
+  display: block;
+}
+.fabric-card {
+  background: var(--color-surface);
+  border-color: var(--color-border-light) !important;
+}
+.fabric-card dt {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+.fabric-card dd {
+  margin-bottom: 0.5rem;
+}

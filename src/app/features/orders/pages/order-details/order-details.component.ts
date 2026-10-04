@@ -10,6 +10,7 @@ import { formatMeasurement } from '@features/customers/utils/measurement-fractio
 import { OrdersApiService } from '../../data-access/orders-api.service';
 import {
   ORDER_STATUS_TRANSITIONS,
+  type OrderItem,
   type OrderStatus,
   type OrderWithItems,
 } from '../../models/order.model';
@@ -89,5 +90,15 @@ export class OrderDetailsComponent {
   }
   formatValue(value: number): string {
     return formatMeasurement(value);
+  }
+  tailoringTotal(item: OrderItem): number {
+    return item.quantity * item.unitPrice;
+  }
+  fabricTotal(item: OrderItem): number {
+    const fabric = item.fabricSnapshot;
+    return fabric ? fabric.quantityUsed * fabric.pricePerUnit : 0;
+  }
+  garmentTotal(item: OrderItem): number {
+    return this.tailoringTotal(item) + this.fabricTotal(item);
   }
 }
