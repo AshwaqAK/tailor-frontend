@@ -44,6 +44,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('@features/orders/orders.routes').then((routes) => routes.ORDER_ROUTES),
       },
+      {
+        path: 'fabrics',
+        loadChildren: () =>
+          import('@features/fabrics/fabrics.routes').then((routes) => routes.FABRIC_ROUTES),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

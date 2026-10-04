@@ -147,6 +147,65 @@
                   }
                 </select>
               </div>
+              <div class="col-md-6">
+                <label class="form-label" [for]="'fabric-' + index">Fabric</label
+                ><select
+                  class="form-select"
+                  [id]="'fabric-' + index"
+                  formControlName="fabricId"
+                  [disabled]="loadingFabrics()"
+                >
+                  <option value="">No fabric selected</option>
+                  @for (fabric of fabrics(); track fabric.fabricId) {
+                    <option [value]="fabric.fabricId">{{ fabricLabel(fabric) }}</option>
+                  }
+                </select>
+                @if (loadingFabrics()) {
+                  <p class="form-text mb-0">Loading available fabrics…</p>
+                }
+                @if (item.controls.fabricId.value) {
+                  <p class="form-text mb-0">
+                    Fabric price: ₹{{ fabricUnitPrice(item).toFixed(2) }} / unit
+                  </p>
+                }
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" [for]="'fabric-quantity-' + index">Fabric quantity</label
+                ><input
+                  class="form-control"
+                  [class.is-invalid]="
+                    item.controls.fabricQuantity.invalid && item.controls.fabricQuantity.touched
+                  "
+                  [id]="'fabric-quantity-' + index"
+                  type="number"
+                  min="0.001"
+                  step="0.001"
+                  inputmode="decimal"
+                  formControlName="fabricQuantity"
+                  [disabled]="!item.controls.fabricId.value"
+                />
+                @if (item.controls.fabricQuantity.invalid && item.controls.fabricQuantity.touched) {
+                  <div class="invalid-feedback">
+                    Enter a positive quantity with up to three decimal places.
+                  </div>
+                }
+              </div>
+              <div class="col-12">
+                <div class="bg-body-tertiary border rounded p-3 small">
+                  <div class="d-flex justify-content-between">
+                    <span>Tailoring total</span>
+                    <strong>₹{{ tailoringTotal(item).toFixed(2) }}</strong>
+                  </div>
+                  <div class="d-flex justify-content-between mt-1">
+                    <span>Fabric cost</span>
+                    <strong>₹{{ fabricCost(item).toFixed(2) }}</strong>
+                  </div>
+                  <div class="d-flex justify-content-between border-top mt-2 pt-2">
+                    <span>Garment total</span>
+                    <strong>₹{{ garmentTotal(item).toFixed(2) }}</strong>
+                  </div>
+                </div>
+              </div>
               <div class="col-12">
                 <label class="form-label" [for]="'item-notes-' + index">Garment notes</label
                 ><textarea
@@ -157,6 +216,21 @@
                 ></textarea>
               </div>
             </div>
+            @if (fabricError(); as message) {
+              <div
+                class="alert alert-warning d-flex align-items-center justify-content-between mt-3 mb-0"
+                role="alert"
+              >
+                <span>{{ message }}</span>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  type="button"
+                  (click)="retryFabrics()"
+                >
+                  Retry
+                </button>
+              </div>
+            }
             @if (
               item.controls.clothingType.value &&
               measurementsFor(item.controls.clothingType.value).length === 0 &&
