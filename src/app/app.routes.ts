@@ -39,6 +39,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('@features/customers/customers.routes').then((routes) => routes.CUSTOMER_ROUTES),
       },
+      {
+        path: 'orders',
+        loadChildren: () =>
+          import('@features/orders/orders.routes').then((routes) => routes.ORDER_ROUTES),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

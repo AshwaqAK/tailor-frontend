@@ -81,6 +81,15 @@
             >
               {{ deactivating() ? 'Deactivating…' : 'Deactivate' }}
             </button>
+          } @else {
+            <button
+              class="btn btn-outline-success detail-action"
+              type="button"
+              [disabled]="deactivating()"
+              (click)="activate()"
+            >
+              {{ deactivating() ? 'Reactivating…' : 'Reactivate' }}
+            </button>
           }
         }
       </div>
@@ -139,18 +148,8 @@
       <app-measurement-history [customer]="currentCustomer" />
     </div>
 
-    <div class="row g-4 mt-0">
-      <div class="col-12">
-        <section class="card border-0 shadow-sm h-100 placeholder-card">
-          <div class="card-body p-4">
-            <p class="text-uppercase text-primary fw-semibold small mb-2">Coming later</p>
-            <h2 class="h5">Orders</h2>
-            <p class="text-body-secondary mb-0">
-              Order history will be available in a future update.
-            </p>
-          </div>
-        </section>
-      </div>
+    <div class="mt-4">
+      <app-customer-order-history [customer]="currentCustomer" />
     </div>
   }
 </div>
