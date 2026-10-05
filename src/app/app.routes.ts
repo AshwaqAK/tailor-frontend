@@ -45,6 +45,13 @@ export const routes: Routes = [
           import('@features/orders/orders.routes').then((routes) => routes.ORDER_ROUTES),
       },
       {
+        path: 'appointments',
+        loadChildren: () =>
+          import('@features/appointments/appointments.routes').then(
+            (routes) => routes.APPOINTMENT_ROUTES,
+          ),
+      },
+      {
         path: 'fabrics',
         loadChildren: () =>
           import('@features/fabrics/fabrics.routes').then((routes) => routes.FABRIC_ROUTES),
