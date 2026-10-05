@@ -2,7 +2,7 @@ import { CurrencyPipe, DatePipe, KeyValuePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-  AbstractControl,
+  type AbstractControl,
   FormControl,
   FormGroup,
   ReactiveFormsModule,

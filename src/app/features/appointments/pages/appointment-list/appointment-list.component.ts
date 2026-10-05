@@ -3,7 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
+  type ElementRef,
   computed,
   inject,
   signal,
@@ -31,10 +31,10 @@ import {
 
 type AppointmentAction =
   | {
-      readonly kind: 'status';
-      readonly appointment: Appointment;
-      readonly status: AppointmentStatus;
-    }
+    readonly kind: 'status';
+    readonly appointment: Appointment;
+    readonly status: AppointmentStatus;
+  }
   | { readonly kind: 'delete'; readonly appointment: Appointment };
 
 const EMPTY_META: PaginatedAppointments['meta'] = {
