@@ -5,20 +5,23 @@
         <a
           routerLink="/orders"
           [queryParams]="result() ? { customerId: result()!.order.customerId } : {}"
-          >Orders</a
         >
+          Orders
+        </a>
       </li>
       <li class="breadcrumb-item active">Order details</li>
     </ol>
   </nav>
+
   @if (error(); as message) {
     <div class="alert alert-danger d-flex justify-content-between" role="alert">
-      <span>{{ message }}</span
-      ><button class="btn btn-sm btn-outline-danger" type="button" (click)="load()">
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="load()">
         Try again
       </button>
     </div>
   }
+
   @if (loading()) {
     <div class="card border-0 shadow-sm">
       <div class="card-body text-center py-5">
@@ -27,14 +30,16 @@
       </div>
     </div>
   } @else if (result(); as current) {
-    <header class="order-header">
+    <header class="order-header d-flex align-items-start justify-content-between gap-3">
       <div class="order-heading">
         <p class="order-id">{{ current.order.orderId }}</p>
         <h1 class="h3 mb-1">{{ customer()?.name || current.order.customerId }}</h1>
         <p class="order-date mb-0">Ordered {{ current.order.orderDate | date: 'mediumDate' }}</p>
       </div>
-      <div class="order-actions">
+
+      <div class="order-actions d-flex align-items-center justify-content-end gap-2">
         <span class="badge order-status">{{ label(current.order.status) }}</span>
+
         @for (status of allowedStatuses(); track status) {
           <button
             class="btn btn-sm btn-outline-primary"
@@ -49,35 +54,42 @@
     </header>
 
     <section class="order-summary mb-4" aria-labelledby="amounts-heading">
-      <div class="summary-meta">
+      <div class="summary-meta d-flex flex-wrap gap-2 mb-3">
         @if (current.order.expectedDeliveryDate) {
-          <span
-            >Expected delivery: {{ current.order.expectedDeliveryDate | date: 'mediumDate' }}</span
-          >
+          <span>
+            Expected delivery:
+            {{ current.order.expectedDeliveryDate | date: 'mediumDate' }}
+          </span>
         }
+
         @if (current.order.notes) {
           <span>Notes: {{ current.order.notes }}</span>
         }
       </div>
+
       @if (paymentDetailsRefreshing()) {
-        <div class="summary-refreshing" role="status">
+        <div class="summary-refreshing d-flex align-items-center gap-2 mb-3" role="status">
           <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
           Updating payment details…
         </div>
       }
+
       <div class="amount-summary">
         <div>
           <span id="amounts-heading">Order total</span>
           <strong>{{ current.order.totalAmount | currency: 'INR' }}</strong>
         </div>
+
         <div>
           <span>Paid</span>
           <strong>{{ current.order.paidAmount | currency: 'INR' }}</strong>
         </div>
+
         <div>
           <span>Balance</span>
           <strong>{{ current.order.balanceAmount | currency: 'INR' }}</strong>
         </div>
+
         <div>
           <span>Payment status</span>
           <strong>{{ label(current.paymentStatus) }}</strong>
@@ -86,8 +98,9 @@
     </section>
 
     <section class="payments-section" aria-labelledby="payments-heading">
-      <div class="section-heading">
+      <div class="section-heading d-flex align-items-center justify-content-between gap-3 mb-3">
         <h2 id="payments-heading" class="h5 mb-0">Payments</h2>
+
         @if (!paymentFormOpen()) {
           <button
             class="btn btn-sm btn-primary"
@@ -99,15 +112,18 @@
           </button>
         }
       </div>
+
       @if (paymentSuccess(); as message) {
         <div class="alert alert-success mb-3" role="status">{{ message }}</div>
       }
+
       @if (paymentRefreshError(); as message) {
         <div
           class="alert alert-warning d-flex justify-content-between align-items-center mb-3"
           role="alert"
         >
           <span>{{ message }}</span>
+
           <button
             class="btn btn-sm btn-outline-warning"
             type="button"
@@ -117,6 +133,7 @@
           </button>
         </div>
       }
+
       @if (paymentFormOpen()) {
         <form
           class="payment-form"
@@ -124,8 +141,8 @@
           (ngSubmit)="submitPayment()"
           novalidate
         >
-          <div class="payment-form-fields">
-            <div>
+          <div class="payment-form-fields row g-3">
+            <div class="col-md-6">
               <label class="form-label" for="payment-amount">Amount</label>
               <input
                 class="form-control"
@@ -138,14 +155,17 @@
                   paymentForm.controls.amount.touched && paymentForm.controls.amount.invalid
                 "
               />
+
               @if (paymentForm.controls.amount.touched && paymentForm.controls.amount.invalid) {
                 <div class="invalid-feedback">
                   Enter a positive amount with up to two decimal places.
                 </div>
               }
             </div>
-            <div>
+
+            <div class="col-md-6">
               <label class="form-label" for="payment-method">Payment method</label>
+
               <select
                 class="form-select"
                 id="payment-method"
@@ -156,10 +176,12 @@
                 "
               >
                 <option [ngValue]="null">Select method</option>
+
                 @for (method of paymentMethods; track method) {
                   <option [ngValue]="method">{{ label(method) }}</option>
                 }
               </select>
+
               @if (
                 paymentForm.controls.paymentMethod.touched &&
                 paymentForm.controls.paymentMethod.invalid
@@ -167,8 +189,10 @@
                 <div class="invalid-feedback">Select a payment method.</div>
               }
             </div>
-            <div>
+
+            <div class="col-md-6">
               <label class="form-label" for="payment-reference">Reference</label>
+
               <input
                 class="form-control"
                 id="payment-reference"
@@ -180,6 +204,7 @@
                   paymentForm.controls.transactionId.invalid
                 "
               />
+
               @if (
                 paymentForm.controls.transactionId.touched &&
                 paymentForm.controls.transactionId.invalid
@@ -189,8 +214,10 @@
                 </div>
               }
             </div>
-            <div class="payment-notes-field">
+
+            <div class="payment-notes-field col-12">
               <label class="form-label" for="payment-notes">Notes</label>
+
               <input
                 class="form-control"
                 id="payment-notes"
@@ -200,10 +227,12 @@
               />
             </div>
           </div>
+
           @if (paymentSubmitError(); as message) {
             <div class="alert alert-danger mb-0" role="alert">{{ message }}</div>
           }
-          <div class="payment-form-actions">
+
+          <div class="payment-form-actions d-flex justify-content-end gap-2">
             <button
               class="btn btn-sm btn-outline-secondary"
               type="button"
@@ -211,27 +240,31 @@
             >
               Cancel
             </button>
+
             <button class="btn btn-sm btn-primary" type="submit" [disabled]="paymentSubmitting()">
               @if (paymentSubmitting()) {
                 <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
               }
+
               Save payment
             </button>
           </div>
         </form>
       }
+
       @if (paymentsError(); as message) {
         <div
           class="alert alert-danger d-flex justify-content-between align-items-center mb-0"
           role="alert"
         >
           <span>{{ message }}</span>
+
           <button class="btn btn-sm btn-outline-danger" type="button" (click)="loadPayments()">
             Try again
           </button>
         </div>
       } @else if (paymentsLoading()) {
-        <div class="payments-loading text-center py-4">
+        <div class="payments-loading d-flex align-items-center justify-content-center gap-2 py-4">
           <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
           <span>Loading payments…</span>
         </div>
@@ -250,20 +283,34 @@
                 <th scope="col">Status</th>
               </tr>
             </thead>
+
             <tbody>
               @for (payment of payments(); track payment.paymentId) {
                 <tr>
                   <td data-label="Date">
                     {{ payment.paidAt ?? payment.createdAt | date: 'mediumDate' }}
                   </td>
+
                   <td data-label="Amount" class="payment-amount">
                     {{ payment.amount | currency: 'INR' }}
                   </td>
-                  <td data-label="Method">{{ label(payment.paymentMethod) }}</td>
-                  <td data-label="Reference">{{ payment.transactionId || '—' }}</td>
-                  <td data-label="Notes">{{ payment.notes || '—' }}</td>
+
+                  <td data-label="Method">
+                    {{ label(payment.paymentMethod) }}
+                  </td>
+
+                  <td data-label="Reference">
+                    {{ payment.transactionId || '—' }}
+                  </td>
+
+                  <td data-label="Notes">
+                    {{ payment.notes || '—' }}
+                  </td>
+
                   <td data-label="Status">
-                    <span class="badge payment-status">{{ label(payment.status) }}</span>
+                    <span class="badge payment-status">
+                      {{ label(payment.status) }}
+                    </span>
                   </td>
                 </tr>
               }
@@ -275,30 +322,35 @@
 
     <section aria-labelledby="garments-heading">
       <h2 id="garments-heading" class="h5 garments-heading">Garments</h2>
+
       @for (item of current.items; track item._id; let index = $index) {
         <article class="garment-item">
-          <header class="garment-header">
+          <header class="garment-header d-flex align-items-center justify-content-between gap-3">
             <div>
               <p class="garment-number">Garment {{ index + 1 }}</p>
               <h3 class="h5 mb-0">{{ label(item.clothingType) }}</h3>
             </div>
+
             <div class="garment-quantity">Qty: {{ item.quantity }}</div>
           </header>
 
-          <div class="garment-line">
-            <span
-              >Tailoring <small>({{ item.unitPrice | currency: 'INR' }} each)</small></span
-            >
+          <div class="garment-line d-flex justify-content-between gap-3 py-2">
+            <span>
+              Tailoring
+              <small>({{ item.unitPrice | currency: 'INR' }} each)</small>
+            </span>
+
             <strong>{{ tailoringTotal(item) | currency: 'INR' }}</strong>
           </div>
 
           @if (item.fabricSnapshot; as fabric) {
             <section class="fabric-details" aria-label="Fabric details">
-              <div class="garment-line fabric-name">
+              <div class="garment-line d-flex justify-content-between gap-3">
                 <span>Fabric: {{ fabric.name }} / {{ fabric.color }}</span>
                 <strong>{{ fabricTotal(item) | currency: 'INR' }}</strong>
               </div>
-              <div class="fabric-meta">
+
+              <div class="fabric-meta d-flex flex-wrap gap-2">
                 <span>{{ label(fabric.type) }}</span>
                 <span>{{ fabric.quantityUsed }} {{ fabric.unit }}</span>
                 <span>{{ fabric.pricePerUnit | currency: 'INR' }} / {{ fabric.unit }}</span>
@@ -306,16 +358,17 @@
             </section>
           }
 
-          <div class="garment-total">
+          <div class="garment-total d-flex justify-content-between gap-3">
             <span>Garment total</span>
             <strong>{{ garmentTotal(item) | currency: 'INR' }}</strong>
           </div>
 
           @if (item.notes || item.serviceSnapshot) {
-            <div class="garment-notes">
+            <div class="garment-notes d-flex flex-wrap gap-2 mt-2">
               @if (item.serviceSnapshot; as service) {
                 <span>Service: {{ service.name }} ({{ service.serviceId }})</span>
               }
+
               @if (item.notes) {
                 <span>Notes: {{ item.notes }}</span>
               }
@@ -324,24 +377,28 @@
 
           @if (item.measurementSnapshot; as measurement) {
             <details class="measurements-panel">
-              <summary>
+              <summary class="d-flex align-items-center justify-content-between gap-3">
                 <span>Measurements · Version {{ measurement.measurementVersion }}</span>
+
                 <span class="measurement-summary-meta">
                   {{ label(measurement.clothingType) }} ·
                   {{ measurement.measuredAt | date: 'mediumDate' }}
                 </span>
               </summary>
+
               <div class="measurements-content">
                 @if (measurement.fitPreference || measurement.notes) {
-                  <div class="measurement-context">
+                  <div class="measurement-context d-flex flex-wrap gap-2 mb-2">
                     @if (measurement.fitPreference) {
                       <span>Fit: {{ label(measurement.fitPreference) }}</span>
                     }
+
                     @if (measurement.notes) {
                       <span>Notes: {{ measurement.notes }}</span>
                     }
                   </div>
                 }
+
                 <div class="measurement-grid">
                   @for (value of measurement.measurements | keyvalue; track value.key) {
                     <div>
