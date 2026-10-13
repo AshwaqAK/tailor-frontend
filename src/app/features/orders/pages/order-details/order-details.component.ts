@@ -244,8 +244,8 @@ export class OrderDetailsComponent {
   fabricSaleUnit(item: OrderItem): string | null {
     return item.fabricSaleSnapshot?.unit ? this.label(item.fabricSaleSnapshot.unit) : null;
   }
-  fabricSalePrice(item: OrderItem): number {
-    return item.fabricSaleSnapshot?.pricePerUnit ?? item.unitPrice;
+  fabricSalePrice(item: OrderItem): number | null {
+    return item.fabricSaleSnapshot?.pricePerUnit ?? null;
   }
   fabricSaleLineTotal(item: OrderItem): number | null {
     return item.fabricSaleSnapshot?.lineTotal ?? null;
@@ -261,6 +261,9 @@ export class OrderDetailsComponent {
     return this.tailoringTotal(item) + this.fabricTotal(item);
   }
   garmentName(item: OrderItem): string {
-    return item.tailoringPricingSnapshot?.garmentTypeName || this.label(item.clothingType ?? '');
+    const snapshotName = item.tailoringPricingSnapshot?.garmentTypeName?.trim();
+    if (snapshotName) return snapshotName;
+    if (item.garmentTypeId) return `Garment ${item.garmentTypeId}`;
+    return 'Tailoring item';
   }
 }

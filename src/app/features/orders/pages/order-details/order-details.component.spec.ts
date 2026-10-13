@@ -119,6 +119,21 @@ describe('OrderDetailsComponent item display', () => {
     expect(fixture.nativeElement.querySelector('.measurements-panel')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.fabric-sale-details')).toBeNull();
   });
+
+  it('uses a clear fallback when a tailoring garment name is missing', () => {
+    const fixture = render([
+      {
+        ...tailoringItem(),
+        itemType: undefined,
+        garmentTypeId: undefined,
+        tailoringPricingSnapshot: undefined,
+        clothingType: undefined,
+      },
+    ]);
+
+    expect(fixture.nativeElement.textContent).toContain('Tailoring item');
+    expect(fixture.nativeElement.textContent).not.toContain('undefined');
+  });
 });
 
 function orderWithItems(items: readonly OrderItem[], totalAmount = 300): OrderWithItems {

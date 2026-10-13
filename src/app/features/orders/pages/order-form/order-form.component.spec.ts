@@ -226,6 +226,22 @@ describe('OrderFormComponent order item payloads', () => {
     expect(item.controls.fabricQuantity.value).toBeNull();
     expect(Object.keys(item.controls.customizations.controls)).toHaveLength(0);
   });
+
+  it('restores whole-number tailoring quantity validation after switching from fractional meters', () => {
+    const { component } = createComponent();
+    component.fabrics.set([fabric(QuantityUnit.Meter, 400)]);
+    const item = component.items.at(0);
+
+    item.controls.itemType.setValue(OrderItemType.FABRIC_SALE);
+    item.controls.fabricId.setValue('FAB-000001');
+    item.controls.quantity.setValue(2.5);
+    expect(item.controls.quantity.valid).toBe(true);
+
+    item.controls.itemType.setValue(OrderItemType.TAILORING);
+
+    expect(item.controls.quantity.value).toBe(1);
+    expect(item.controls.quantity.valid).toBe(true);
+  });
 });
 
 function customer() {

@@ -426,7 +426,19 @@ export class OrderFormComponent {
     fabric.updateValueAndValidity({ emitEvent: false });
     fabricQuantity.updateValueAndValidity({ emitEvent: false });
     unitPrice.updateValueAndValidity({ emitEvent: false });
-    this.applyFabricSaleQuantityValidators(item);
+    if (tailoring) {
+      if (!Number.isInteger(item.controls.quantity.value) || item.controls.quantity.value < 1) {
+        item.controls.quantity.setValue(1, { emitEvent: false });
+      }
+      item.controls.quantity.setValidators([
+        Validators.required,
+        Validators.min(1),
+        Validators.pattern(/^\d+$/),
+      ]);
+      item.controls.quantity.updateValueAndValidity({ emitEvent: false });
+    } else {
+      this.applyFabricSaleQuantityValidators(item);
+    }
     this.clearPricingPreview(item);
   }
   private applyFabricSaleQuantityValidators(item: ItemGroup): void {

@@ -387,7 +387,9 @@
                 </div>
                 <div class="garment-line d-flex justify-content-between gap-3">
                   <span>Saved price per unit</span>
-                  <strong>{{ fabricSalePrice(item) | currency: 'INR' }}</strong>
+                  <strong>{{
+                    fabricSalePrice(item) === null ? '—' : (fabricSalePrice(item) | currency: 'INR')
+                  }}</strong>
                 </div>
                 <div class="garment-line d-flex justify-content-between gap-3 fw-semibold">
                   <span>Fabric sale total</span>
