@@ -20,6 +20,8 @@ import { PaymentMethod, type Payment } from '@features/payments/models/payment.m
 import { OrdersApiService } from '../../data-access/orders-api.service';
 import {
   ORDER_STATUS_TRANSITIONS,
+  OrderItemType,
+  type FabricSaleSnapshot,
   type OrderItem,
   type OrderStatus,
   type OrderWithItems,
@@ -228,6 +230,17 @@ export class OrderDetailsComponent {
   formatValue(value: number): string {
     return formatMeasurement(value);
   }
+  itemType(item: OrderItem): OrderItemType {
+    return item.itemType === OrderItemType.FabricSale
+      ? OrderItemType.FabricSale
+      : OrderItemType.Tailoring;
+  }
+  isFabricSale(item: OrderItem): boolean {
+    return this.itemType(item) === OrderItemType.FabricSale;
+  }
+  fabricSaleSnapshot(item: OrderItem): FabricSaleSnapshot | null {
+    return this.isFabricSale(item) ? (item.fabricSaleSnapshot ?? null) : null;
+  }
   tailoringTotal(item: OrderItem): number {
     return item.tailoringPricingSnapshot?.finalTailoringTotal ?? item.quantity * item.unitPrice;
   }
@@ -239,6 +252,9 @@ export class OrderDetailsComponent {
     return this.tailoringTotal(item) + this.fabricTotal(item);
   }
   garmentName(item: OrderItem): string {
-    return item.tailoringPricingSnapshot?.garmentTypeName || this.label(item.clothingType ?? '');
+    const snapshotName = item.tailoringPricingSnapshot?.garmentTypeName?.trim();
+    if (snapshotName) return snapshotName;
+    if (item.garmentTypeId) return `Garment ${item.garmentTypeId}`;
+    return 'Tailoring item';
   }
 }

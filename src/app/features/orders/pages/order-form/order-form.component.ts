@@ -27,11 +27,16 @@ import {
   type GarmentType,
 } from '@features/garment-types/models/garment-type.model';
 import { FabricsApiService } from '@features/fabrics/data-access/fabrics-api.service';
-import type { Fabric } from '@features/fabrics/models/fabric.model';
+import { QuantityUnit, type Fabric } from '@features/fabrics/models/fabric.model';
 import { OrdersApiService } from '../../data-access/orders-api.service';
-import type { CreateOrderRequest, PricingPreviewResponse } from '../../models/order.model';
+import {
+  OrderItemType,
+  type CreateOrderRequest,
+  type PricingPreviewResponse,
+} from '../../models/order.model';
 
 type ItemControls = {
+  itemType: FormControl<OrderItemType>;
   garmentTypeId: FormControl<string | null>;
   clothingType: FormControl<ClothingType | null>;
   quantity: FormControl<number>;
@@ -64,6 +69,7 @@ const maxDecimalPlaces = (places: number): ValidatorFn => {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrderFormComponent {
+  readonly OrderItemType = OrderItemType;
   private readonly customersApi = inject(CustomersApiService);
   private readonly measurementsApi = inject(MeasurementsApiService);
   private readonly garmentTypesApi = inject(GarmentTypeService);
@@ -115,6 +121,7 @@ export class OrderFormComponent {
   }
   addItem(markDirty = true): void {
     const group = new FormGroup<ItemControls>({
+      itemType: new FormControl(OrderItemType.Tailoring, { nonNullable: true }),
       garmentTypeId: new FormControl<string | null>(null, Validators.required),
       clothingType: new FormControl<ClothingType | null>(null),
       quantity: new FormControl(1, {
@@ -131,9 +138,13 @@ export class OrderFormComponent {
       customizations: new FormGroup({}),
       notes: new FormControl('', { nonNullable: true }),
     });
+    group.controls.itemType.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((itemType) => this.configureItemType(group, itemType));
     group.controls.garmentTypeId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((garmentTypeId) => {
+        if (this.isFabricSale(group)) return;
         group.controls.measurementId.setValue('', { emitEvent: false });
         group.controls.clothingType.setValue(this.legacyClothingType(garmentTypeId), {
           emitEvent: false,
@@ -141,16 +152,13 @@ export class OrderFormComponent {
         group.setControl('customizations', this.createCustomizationControls(garmentTypeId));
         if (garmentTypeId) this.clearIncompatibleMeasurement(group);
       });
-    group.controls.fabricId.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((fabricId) => {
-        const quantity = group.controls.fabricQuantity;
-        quantity.reset(null, { emitEvent: false });
-        quantity.setValidators(
-          fabricId ? [Validators.required, Validators.min(0.001), maxDecimalPlaces(3)] : [],
-        );
-        quantity.updateValueAndValidity({ emitEvent: false });
-      });
+    group.controls.fabricId.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.isFabricSale(group)) {
+        this.updateFabricSaleQuantityValidators(group);
+        return;
+      }
+      this.updateTailoringFabricQuantityValidators(group, true);
+    });
     group.valueChanges
       .pipe(
         map(() => this.pricingPreviewInputKey(group)),
@@ -162,6 +170,7 @@ export class OrderFormComponent {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((preview) => this.setPricingPreview(group, preview));
+    this.configureItemType(group, OrderItemType.Tailoring, false);
     this.items.push(group);
     if (markDirty) this.form.markAsDirty();
   }
@@ -251,6 +260,33 @@ export class OrderFormComponent {
     const fabricId = item.controls.fabricId.value;
     return this.fabrics().find((fabric) => fabric.fabricId === fabricId)?.pricePerUnit ?? 0;
   }
+  selectedFabric(item: ItemGroup): Fabric | null {
+    const fabricId = item.controls.fabricId.value;
+    return this.fabrics().find((fabric) => fabric.fabricId === fabricId) ?? null;
+  }
+  isFabricSale(item: ItemGroup): boolean {
+    return item.controls.itemType.value === OrderItemType.FabricSale;
+  }
+  saleQuantityStep(item: ItemGroup): string {
+    return this.selectedFabric(item)?.unit === QuantityUnit.Piece ? '1' : '0.001';
+  }
+  saleQuantityMin(item: ItemGroup): number {
+    return this.selectedFabric(item)?.unit === QuantityUnit.Piece ? 1 : 0.001;
+  }
+  saleQuantityInputMode(item: ItemGroup): 'numeric' | 'decimal' {
+    return this.selectedFabric(item)?.unit === QuantityUnit.Piece ? 'numeric' : 'decimal';
+  }
+  saleQuantityUnit(item: ItemGroup): string {
+    return this.selectedFabric(item)?.unit.toLowerCase() ?? 'unit';
+  }
+  fabricSaleCost(item: ItemGroup): number | null {
+    const fabric = this.selectedFabric(item);
+    const quantity = item.controls.quantity.value;
+    return fabric && item.controls.quantity.valid ? fabric.pricePerUnit * quantity : null;
+  }
+  fabricSaleCostDisplay(item: ItemGroup): number {
+    return this.fabricSaleCost(item) ?? 0;
+  }
   tailoringPerGarment(item: ItemGroup): number | null {
     return this.pricingPreviewFor(item)?.calculatedPerGarmentTailoringAmount ?? null;
   }
@@ -271,10 +307,12 @@ export class OrderFormComponent {
     this.loadGarmentTypes();
   }
   total(): number | null {
-    const garmentTotals = this.items.controls.map((item) => this.garmentTotal(item));
-    return garmentTotals.some((value) => value === null)
+    const lineTotals = this.items.controls.map((item) =>
+      this.isFabricSale(item) ? this.fabricSaleCost(item) : this.garmentTotal(item),
+    );
+    return lineTotals.some((value) => value === null)
       ? null
-      : garmentTotals.reduce<number>((sum, value) => sum + (value ?? 0), 0);
+      : lineTotals.reduce<number>((sum, value) => sum + (value ?? 0), 0);
   }
   submit(): void {
     const customer = this.customer();
@@ -290,20 +328,31 @@ export class OrderFormComponent {
         ? { expectedDeliveryDate: new Date(`${value.expectedDeliveryDate}T00:00:00`).toISOString() }
         : {}),
       ...(value.notes.trim() ? { notes: value.notes.trim() } : {}),
-      items: value.items.map((item, index) => ({
-        garmentTypeId: item.garmentTypeId!,
-        ...(item.clothingType ? { clothingType: item.clothingType } : {}),
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        measurementId: item.measurementId,
-        ...(this.customizationPayload(this.items.at(index))
-          ? { customizations: this.customizationPayload(this.items.at(index)) }
-          : {}),
-        ...(item.fabricId
-          ? { fabricId: item.fabricId, fabricQuantity: item.fabricQuantity as number }
-          : {}),
-        ...(item.notes.trim() ? { notes: item.notes.trim() } : {}),
-      })),
+      items: value.items.map((item, index) => {
+        if (item.itemType === OrderItemType.FabricSale) {
+          return {
+            itemType: OrderItemType.FabricSale,
+            fabricId: item.fabricId,
+            quantity: item.quantity,
+            ...(item.notes.trim() ? { notes: item.notes.trim() } : {}),
+          };
+        }
+        return {
+          itemType: OrderItemType.Tailoring,
+          garmentTypeId: item.garmentTypeId!,
+          ...(item.clothingType ? { clothingType: item.clothingType } : {}),
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          measurementId: item.measurementId,
+          ...(this.customizationPayload(this.items.at(index))
+            ? { customizations: this.customizationPayload(this.items.at(index)) }
+            : {}),
+          ...(item.fabricId
+            ? { fabricId: item.fabricId, fabricQuantity: item.fabricQuantity as number }
+            : {}),
+          ...(item.notes.trim() ? { notes: item.notes.trim() } : {}),
+        };
+      }),
     };
     this.submitting.set(true);
     this.error.set(null);
@@ -413,6 +462,66 @@ export class OrderFormComponent {
       item.controls.measurementId.setValue('');
     }
   }
+  private configureItemType(item: ItemGroup, itemType: OrderItemType, clearValues = true): void {
+    if (clearValues) {
+      item.controls.garmentTypeId.reset(null, { emitEvent: false });
+      item.controls.clothingType.reset(null, { emitEvent: false });
+      item.controls.measurementId.reset('', { emitEvent: false });
+      item.controls.quantity.reset(1, { emitEvent: false });
+      item.controls.unitPrice.reset(0, { emitEvent: false });
+      item.controls.fabricId.reset('', { emitEvent: false });
+      item.controls.fabricQuantity.reset(null, { emitEvent: false });
+      item.setControl('customizations', this.createCustomizationControls(null));
+      item.controls.notes.reset('', { emitEvent: false });
+      this.clearPricingPreview(item);
+    }
+
+    if (itemType === OrderItemType.FabricSale) {
+      item.controls.garmentTypeId.clearValidators();
+      item.controls.measurementId.clearValidators();
+      item.controls.unitPrice.clearValidators();
+      item.controls.fabricId.setValidators(Validators.required);
+      item.controls.fabricQuantity.clearValidators();
+      this.updateFabricSaleQuantityValidators(item);
+    } else {
+      item.controls.garmentTypeId.setValidators(Validators.required);
+      item.controls.measurementId.setValidators(Validators.required);
+      item.controls.unitPrice.setValidators([Validators.required, Validators.min(0)]);
+      item.controls.fabricId.clearValidators();
+      this.updateTailoringFabricQuantityValidators(item, false);
+      item.controls.quantity.setValidators([
+        Validators.required,
+        Validators.min(1),
+        Validators.pattern(/^\d+$/),
+      ]);
+    }
+    item.controls.garmentTypeId.updateValueAndValidity({ emitEvent: false });
+    item.controls.measurementId.updateValueAndValidity({ emitEvent: false });
+    item.controls.unitPrice.updateValueAndValidity({ emitEvent: false });
+    item.controls.fabricId.updateValueAndValidity({ emitEvent: false });
+    item.controls.fabricQuantity.updateValueAndValidity({ emitEvent: false });
+    item.controls.quantity.updateValueAndValidity({ emitEvent: false });
+  }
+  private updateTailoringFabricQuantityValidators(item: ItemGroup, clearValue: boolean): void {
+    const quantity = item.controls.fabricQuantity;
+    if (clearValue) quantity.reset(null, { emitEvent: false });
+    quantity.setValidators(
+      item.controls.fabricId.value
+        ? [Validators.required, Validators.min(0.001), maxDecimalPlaces(3)]
+        : [],
+    );
+    quantity.updateValueAndValidity({ emitEvent: false });
+  }
+  private updateFabricSaleQuantityValidators(item: ItemGroup): void {
+    const quantity = item.controls.quantity;
+    const isPiece = this.selectedFabric(item)?.unit === QuantityUnit.Piece;
+    quantity.setValidators(
+      isPiece
+        ? [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)]
+        : [Validators.required, Validators.min(0.001), maxDecimalPlaces(3)],
+    );
+    quantity.updateValueAndValidity({ emitEvent: false });
+  }
   private legacyClothingType(garmentTypeId: string | null): ClothingType | null {
     const code = this.garmentTypeFor(garmentTypeId)?.code;
     return code && Object.values(ClothingType).includes(code as ClothingType)
@@ -461,12 +570,14 @@ export class OrderFormComponent {
   }
   private pricingPreviewInputKey(item: ItemGroup): string {
     return JSON.stringify({
+      itemType: item.controls.itemType.value,
       garmentTypeId: item.controls.garmentTypeId.value,
       quantity: item.controls.quantity.value,
       customizations: item.controls.customizations.getRawValue(),
     });
   }
   private requestPricingPreview(item: ItemGroup) {
+    if (this.isFabricSale(item)) return EMPTY;
     const garmentTypeId = item.controls.garmentTypeId.value;
     const quantity = item.controls.quantity.value;
     if (

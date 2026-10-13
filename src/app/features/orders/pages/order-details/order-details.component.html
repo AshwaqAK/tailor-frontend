@@ -334,148 +334,201 @@
     </section>
 
     <section aria-labelledby="garments-heading">
-      <h2 id="garments-heading" class="h5 garments-heading">Garments</h2>
+      <h2 id="garments-heading" class="h5 garments-heading">Order items</h2>
 
       @for (item of current.items; track item._id; let index = $index) {
         <article class="garment-item">
-          <header class="garment-header d-flex align-items-center justify-content-between gap-3">
-            <div>
-              <p class="garment-number">Garment {{ index + 1 }}</p>
-              <h3 class="h5 mb-0">{{ garmentName(item) }}</h3>
-              @if (item.tailoringPricingSnapshot; as pricing) {
-                <span class="small text-body-secondary">{{ pricing.garmentTypeCode }}</span>
-              }
-            </div>
-
-            <div class="garment-quantity">Qty: {{ item.quantity }}</div>
-          </header>
-
-          @if (item.tailoringPricingSnapshot; as pricing) {
-            <section class="pricing-snapshot" aria-label="Saved tailoring pricing">
-              <div class="garment-line d-flex justify-content-between gap-3">
-                <span>Base tailoring price</span>
-                <strong>{{ pricing.baseTailoringPrice | currency: 'INR' }}</strong>
+          @if (isFabricSale(item)) {
+            <header class="garment-header d-flex align-items-center justify-content-between gap-3">
+              <div>
+                <p class="garment-number">Fabric sale {{ index + 1 }}</p>
+                @if (fabricSaleSnapshot(item); as sale) {
+                  <h3 class="h5 mb-0">{{ sale.name }}</h3>
+                } @else {
+                  <h3 class="h5 mb-0">Fabric sale item</h3>
+                }
               </div>
 
-              @if (pricing.customizationGroups?.length) {
-                <div class="pricing-customizations">
-                  <span class="pricing-label">Selected customizations</span>
-                  @for (group of pricing.customizationGroups; track group.groupName) {
-                    <div class="pricing-group">
-                      <div class="garment-line d-flex justify-content-between gap-3">
-                        <span>{{ group.groupName }}</span>
-                        <strong>{{ group.calculatedCharge | currency: 'INR' }}</strong>
-                      </div>
-                      @for (option of group.options ?? []; track option.optionName) {
-                        <div class="pricing-option d-flex justify-content-between gap-3">
-                          <span>
-                            {{ option.optionName }} · {{ label(option.pricingType) }}
-                            @if (option.submittedValue !== undefined) {
-                              <span>({{ option.submittedValue }})</span>
-                            }
-                          </span>
-                          <span>{{ option.calculatedCharge | currency: 'INR' }}</span>
-                        </div>
-                      }
-                    </div>
-                  }
+              @if (fabricSaleSnapshot(item); as sale) {
+                <div class="garment-quantity">Qty: {{ sale.quantitySold }} {{ sale.unit }}</div>
+              } @else {
+                <div class="garment-quantity">Qty: {{ item.quantity }}</div>
+              }
+            </header>
+
+            @if (fabricSaleSnapshot(item); as sale) {
+              <section class="fabric-details" aria-label="Saved fabric sale details">
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Fabric: {{ sale.name }} / {{ sale.color }}</span>
                 </div>
-              }
 
-              <div class="garment-line d-flex justify-content-between gap-3">
-                <span>Customization charges</span>
-                <strong>{{ pricing.calculatedCustomizationCharge | currency: 'INR' }}</strong>
+                <div class="fabric-meta d-flex flex-wrap gap-2">
+                  <span>{{ label(sale.type) }}</span>
+                  <span>{{ sale.quantitySold }} {{ sale.unit }}</span>
+                </div>
+
+                <div class="garment-line d-flex justify-content-between gap-3 mt-2">
+                  <span>Saved price per unit</span>
+                  <strong>{{ sale.pricePerUnit | currency: 'INR' }}</strong>
+                </div>
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Fabric-sale line total</span>
+                  <strong>{{ sale.lineTotal | currency: 'INR' }}</strong>
+                </div>
+              </section>
+            } @else {
+              <div class="alert alert-warning mb-0" role="alert">
+                Saved fabric-sale details are unavailable for this item.
               </div>
-              <div class="garment-line d-flex justify-content-between gap-3">
-                <span>Per-garment tailoring amount</span>
-                <strong>{{ pricing.calculatedPerGarmentTailoringAmount | currency: 'INR' }}</strong>
-              </div>
-              <div class="garment-line d-flex justify-content-between gap-3">
-                <span>Garment quantity</span>
-                <strong>{{ pricing.quantity }}</strong>
-              </div>
-              <div class="garment-line d-flex justify-content-between gap-3 fw-semibold">
-                <span>Total tailoring amount</span>
-                <strong>{{ pricing.finalTailoringTotal | currency: 'INR' }}</strong>
-              </div>
-            </section>
-          } @else {
-            <div class="garment-line d-flex justify-content-between gap-3 py-2">
-              <span>
-                Tailoring
-                <small>({{ item.unitPrice | currency: 'INR' }} each)</small>
-              </span>
+            }
 
-              <strong>{{ tailoringTotal(item) | currency: 'INR' }}</strong>
-            </div>
-          }
-
-          @if (item.fabricSnapshot; as fabric) {
-            <section class="fabric-details" aria-label="Fabric details">
-              <div class="garment-line d-flex justify-content-between gap-3">
-                <span>Fabric: {{ fabric.name }} / {{ fabric.color }}</span>
-                <strong>{{ fabricTotal(item) | currency: 'INR' }}</strong>
-              </div>
-
-              <div class="fabric-meta d-flex flex-wrap gap-2">
-                <span>{{ label(fabric.type) }}</span>
-                <span>{{ fabric.quantityUsed }} {{ fabric.unit }}</span>
-                <span>{{ fabric.pricePerUnit | currency: 'INR' }} / {{ fabric.unit }}</span>
-              </div>
-            </section>
-          }
-
-          <div class="garment-total d-flex justify-content-between gap-3">
-            <span>Garment total</span>
-            <strong>{{ garmentTotal(item) | currency: 'INR' }}</strong>
-          </div>
-
-          @if (item.notes || item.serviceSnapshot) {
-            <div class="garment-notes d-flex flex-wrap gap-2 mt-2">
-              @if (item.serviceSnapshot; as service) {
-                <span>Service: {{ service.name }} ({{ service.serviceId }})</span>
-              }
-
-              @if (item.notes) {
+            @if (item.notes) {
+              <div class="garment-notes d-flex flex-wrap gap-2 mt-2">
                 <span>Notes: {{ item.notes }}</span>
-              }
-            </div>
-          }
+              </div>
+            }
+          } @else {
+            <header class="garment-header d-flex align-items-center justify-content-between gap-3">
+              <div>
+                <p class="garment-number">Garment {{ index + 1 }}</p>
+                <h3 class="h5 mb-0">{{ garmentName(item) }}</h3>
+                @if (item.tailoringPricingSnapshot; as pricing) {
+                  <span class="small text-body-secondary">{{ pricing.garmentTypeCode }}</span>
+                }
+              </div>
 
-          @if (item.measurementSnapshot; as measurement) {
-            <details class="measurements-panel">
-              <summary class="d-flex align-items-center justify-content-between gap-3">
-                <span>Measurements · Version {{ measurement.measurementVersion }}</span>
+              <div class="garment-quantity">Qty: {{ item.quantity }}</div>
+            </header>
 
-                <span class="measurement-summary-meta">
-                  {{ label(measurement.clothingType ?? '') }} ·
-                  {{ measurement.measuredAt | date: 'mediumDate' }}
-                </span>
-              </summary>
+            @if (item.tailoringPricingSnapshot; as pricing) {
+              <section class="pricing-snapshot" aria-label="Saved tailoring pricing">
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Base tailoring price</span>
+                  <strong>{{ pricing.baseTailoringPrice | currency: 'INR' }}</strong>
+                </div>
 
-              <div class="measurements-content">
-                @if (measurement.fitPreference || measurement.notes) {
-                  <div class="measurement-context d-flex flex-wrap gap-2 mb-2">
-                    @if (measurement.fitPreference) {
-                      <span>Fit: {{ label(measurement.fitPreference) }}</span>
-                    }
-
-                    @if (measurement.notes) {
-                      <span>Notes: {{ measurement.notes }}</span>
+                @if (pricing.customizationGroups?.length) {
+                  <div class="pricing-customizations">
+                    <span class="pricing-label">Selected customizations</span>
+                    @for (group of pricing.customizationGroups; track group.groupName) {
+                      <div class="pricing-group">
+                        <div class="garment-line d-flex justify-content-between gap-3">
+                          <span>{{ group.groupName }}</span>
+                          <strong>{{ group.calculatedCharge | currency: 'INR' }}</strong>
+                        </div>
+                        @for (option of group.options ?? []; track option.optionName) {
+                          <div class="pricing-option d-flex justify-content-between gap-3">
+                            <span>
+                              {{ option.optionName }} · {{ label(option.pricingType) }}
+                              @if (option.submittedValue !== undefined) {
+                                <span>({{ option.submittedValue }})</span>
+                              }
+                            </span>
+                            <span>{{ option.calculatedCharge | currency: 'INR' }}</span>
+                          </div>
+                        }
+                      </div>
                     }
                   </div>
                 }
 
-                <div class="measurement-grid">
-                  @for (value of measurement.measurements | keyvalue; track value.key) {
-                    <div>
-                      <span>{{ label(value.key) }}</span>
-                      <strong>{{ formatValue(value.value) }}</strong>
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Customization charges</span>
+                  <strong>{{ pricing.calculatedCustomizationCharge | currency: 'INR' }}</strong>
+                </div>
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Per-garment tailoring amount</span>
+                  <strong>{{
+                    pricing.calculatedPerGarmentTailoringAmount | currency: 'INR'
+                  }}</strong>
+                </div>
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Garment quantity</span>
+                  <strong>{{ pricing.quantity }}</strong>
+                </div>
+                <div class="garment-line d-flex justify-content-between gap-3 fw-semibold">
+                  <span>Total tailoring amount</span>
+                  <strong>{{ pricing.finalTailoringTotal | currency: 'INR' }}</strong>
+                </div>
+              </section>
+            } @else {
+              <div class="garment-line d-flex justify-content-between gap-3 py-2">
+                <span>
+                  Tailoring
+                  <small>({{ item.unitPrice | currency: 'INR' }} each)</small>
+                </span>
+
+                <strong>{{ tailoringTotal(item) | currency: 'INR' }}</strong>
+              </div>
+            }
+
+            @if (item.fabricSnapshot; as fabric) {
+              <section class="fabric-details" aria-label="Fabric details">
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Fabric: {{ fabric.name }} / {{ fabric.color }}</span>
+                  <strong>{{ fabricTotal(item) | currency: 'INR' }}</strong>
+                </div>
+
+                <div class="fabric-meta d-flex flex-wrap gap-2">
+                  <span>{{ label(fabric.type) }}</span>
+                  <span>{{ fabric.quantityUsed }} {{ fabric.unit }}</span>
+                  <span>{{ fabric.pricePerUnit | currency: 'INR' }} / {{ fabric.unit }}</span>
+                </div>
+              </section>
+            }
+
+            <div class="garment-total d-flex justify-content-between gap-3">
+              <span>Garment total</span>
+              <strong>{{ garmentTotal(item) | currency: 'INR' }}</strong>
+            </div>
+
+            @if (item.notes || item.serviceSnapshot) {
+              <div class="garment-notes d-flex flex-wrap gap-2 mt-2">
+                @if (item.serviceSnapshot; as service) {
+                  <span>Service: {{ service.name }} ({{ service.serviceId }})</span>
+                }
+
+                @if (item.notes) {
+                  <span>Notes: {{ item.notes }}</span>
+                }
+              </div>
+            }
+
+            @if (item.measurementSnapshot; as measurement) {
+              <details class="measurements-panel">
+                <summary class="d-flex align-items-center justify-content-between gap-3">
+                  <span>Measurements · Version {{ measurement.measurementVersion }}</span>
+
+                  <span class="measurement-summary-meta">
+                    {{ label(measurement.clothingType ?? '') }} ·
+                    {{ measurement.measuredAt | date: 'mediumDate' }}
+                  </span>
+                </summary>
+
+                <div class="measurements-content">
+                  @if (measurement.fitPreference || measurement.notes) {
+                    <div class="measurement-context d-flex flex-wrap gap-2 mb-2">
+                      @if (measurement.fitPreference) {
+                        <span>Fit: {{ label(measurement.fitPreference) }}</span>
+                      }
+
+                      @if (measurement.notes) {
+                        <span>Notes: {{ measurement.notes }}</span>
+                      }
                     </div>
                   }
+
+                  <div class="measurement-grid">
+                    @for (value of measurement.measurements | keyvalue; track value.key) {
+                      <div>
+                        <span>{{ label(value.key) }}</span>
+                        <strong>{{ formatValue(value.value) }}</strong>
+                      </div>
+                    }
+                  </div>
                 </div>
-              </div>
-            </details>
+              </details>
+            }
           }
         </article>
       }
