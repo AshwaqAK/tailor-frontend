@@ -12,8 +12,7 @@
         class="btn btn-primary align-self-sm-start"
         routerLink="new"
         [queryParams]="customer() ? { customerId: customer()!.customerId } : {}"
-        ><i class="bi bi-plus-circle fs-6 me-1" aria-hidden="true"></i
-        ><span>Create order</span></a
+        ><i class="bi bi-plus-circle fs-6 me-1" aria-hidden="true"></i><span>Create order</span></a
       >
     }
   </header>
@@ -134,8 +133,7 @@
             </p>
             <p class="fw-semibold">{{ result.order.totalAmount | currency: 'INR' }}</p>
             <a class="btn btn-outline-primary w-100" [routerLink]="[result.order.orderId]"
-              ><i class="bi bi-eye fs-6 me-1" aria-hidden="true"></i
-              ><span>View order</span></a
+              ><i class="bi bi-eye fs-6 me-1" aria-hidden="true"></i><span>View order</span></a
             >
           </article>
         }
