@@ -56,6 +56,13 @@ export const routes: Routes = [
         loadChildren: () =>
           import('@features/fabrics/fabrics.routes').then((routes) => routes.FABRIC_ROUTES),
       },
+      {
+        path: 'garment-types',
+        loadChildren: () =>
+          import('@features/garment-types/garment-types.routes').then(
+            (routes) => routes.GARMENT_TYPE_ROUTES,
+          ),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

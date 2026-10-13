@@ -17,7 +17,8 @@ export enum FitPreference {
 export interface Measurement {
   readonly _id: string;
   readonly customerId: string;
-  readonly clothingType: ClothingType;
+  readonly garmentTypeId: string;
+  readonly clothingType?: ClothingType;
   readonly version: number;
   readonly measurements: Readonly<Record<string, number>>;
   readonly fitPreference?: FitPreference;
@@ -31,7 +32,8 @@ export interface Measurement {
 
 export interface CreateMeasurementRequest {
   readonly customerId: string;
-  readonly clothingType: ClothingType;
+  readonly garmentTypeId: string;
+  readonly clothingType?: ClothingType;
   readonly version: number;
   readonly measurements: Readonly<Record<string, number>>;
   readonly fitPreference?: FitPreference;

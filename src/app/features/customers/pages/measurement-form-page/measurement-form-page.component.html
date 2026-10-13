@@ -30,21 +30,26 @@
               <h1 class="h5 mb-0">{{ currentCustomer.name }}</h1>
             </div>
             <div class="col-12 col-md-4">
-              <label class="form-label fw-semibold" for="clothing-type">Clothing type</label
+              <label class="form-label fw-semibold" for="garment-type">Garment type</label
               ><select
-                id="clothing-type"
+                id="garment-type"
                 class="form-select form-select-lg"
-                formControlName="clothingType"
+                formControlName="garmentTypeId"
                 [class.is-invalid]="
-                  form.controls.clothingType.touched && form.controls.clothingType.invalid
+                  form.controls.garmentTypeId.touched && form.controls.garmentTypeId.invalid
                 "
               >
                 <option [ngValue]="null">Select garment</option>
-                @for (type of clothingTypes; track type) {
-                  <option [ngValue]="type">{{ label(type) }}</option>
+                @for (garmentType of garmentTypes(); track garmentType.garmentTypeId) {
+                  <option [ngValue]="garmentType.garmentTypeId">
+                    {{ garmentType.name }} ({{ garmentType.code }})
+                  </option>
                 }
               </select>
-              <div class="invalid-feedback">Select a clothing type.</div>
+              @if (!garmentTypes().length) {
+                <div class="form-text">No garment types are configured.</div>
+              }
+              <div class="invalid-feedback">Select a garment type.</div>
             </div>
             <div class="col-12 col-md-4">
               <div class="d-flex justify-content-between small mb-2">
@@ -77,9 +82,7 @@
               class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4"
             >
               <div>
-                <h2 class="h4 mb-1">
-                  {{ label(form.controls.clothingType.value ?? '') }} measurements
-                </h2>
+                <h2 class="h4 mb-1">{{ selectedGarmentTypeName() }} measurements</h2>
                 <p class="text-body-secondary mb-0">
                   Enter whole inches and select the nearest eighth.
                 </p>
@@ -108,7 +111,7 @@
                 >
                   <div class="field-heading">
                     <label class="fw-semibold" [for]="'whole-' + field.key"
-                      >{{ field.label }}
+                      >{{ field.name }}
                       @if (field.required) {
                         <span class="text-danger" aria-label="required">*</span>
                       }</label
@@ -147,14 +150,14 @@
                       <button
                         class="btn btn-outline-secondary"
                         type="button"
-                        [attr.aria-label]="'Subtract one eighth inch from ' + field.label"
+                        [attr.aria-label]="'Subtract one eighth inch from ' + field.name"
                         (click)="adjust(field, -1)"
                       >
                         −⅛</button
                       ><button
                         class="btn btn-outline-secondary"
                         type="button"
-                        [attr.aria-label]="'Add one eighth inch to ' + field.label"
+                        [attr.aria-label]="'Add one eighth inch to ' + field.name"
                         (click)="adjust(field, 1)"
                       >
                         +⅛</button
@@ -215,8 +218,20 @@
       } @else {
         <div class="card border-0 shadow-sm">
           <div class="card-body text-center py-5">
-            <h2 class="h5">Select a clothing type</h2>
-            <p class="text-body-secondary mb-0">Its measurement fields will appear here.</p>
+            <h2 class="h5">
+              {{
+                form.controls.garmentTypeId.value
+                  ? 'No measurement fields configured'
+                  : 'Select a garment type'
+              }}
+            </h2>
+            <p class="text-body-secondary mb-0">
+              {{
+                form.controls.garmentTypeId.value
+                  ? 'This garment type has no configured measurement fields.'
+                  : 'Its measurement fields will appear here.'
+              }}
+            </p>
           </div>
         </div>
       }

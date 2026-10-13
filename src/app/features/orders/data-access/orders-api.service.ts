@@ -8,6 +8,8 @@ import type {
   Order,
   OrderStatus,
   OrderWithItems,
+  PricingPreviewRequest,
+  PricingPreviewResponse,
 } from '../models/order.model';
 
 @Injectable({ providedIn: 'root' })
@@ -29,6 +31,9 @@ export class OrdersApiService {
     readonly items: readonly OrderWithItems['items'][number][];
   }> {
     return this.api.post('orders', request);
+  }
+  previewPricing(request: PricingPreviewRequest): Observable<PricingPreviewResponse> {
+    return this.api.post('orders/pricing-preview', request);
   }
   updateStatus(orderId: string, status: OrderStatus): Observable<Order> {
     return this.api.patch(`orders/${encodeURIComponent(orderId)}/status`, { status });

@@ -19,17 +19,13 @@ import {
 } from '@angular/forms';
 import type { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize, map, of, switchMap } from 'rxjs';
+import { finalize, forkJoin, map, of } from 'rxjs';
 
 import { ApiError } from '@core/api/api-error';
 import { CustomersApiService } from '../../data-access/customers-api.service';
 import { MeasurementsApiService } from '../../data-access/measurements-api.service';
+import { GarmentTypeService } from '@features/garment-types/services/garment-type.service';
 import type { Customer } from '../../models/customer.model';
-import {
-  MEASUREMENT_FIELDS,
-  type MeasurementFieldDefinition,
-  type MeasurementFieldKey,
-} from '../../models/measurement-fields.config';
 import {
   ClothingType,
   FitPreference,
@@ -37,6 +33,10 @@ import {
   type Measurement,
   type UpdateMeasurementRequest,
 } from '../../models/measurement.model';
+import type {
+  GarmentType,
+  MeasurementField,
+} from '@features/garment-types/models/garment-type.model';
 import {
   FRACTION_OPTIONS,
   adjustMeasurement,
@@ -71,10 +71,11 @@ const entryValidator =
 export class MeasurementFormPageComponent {
   private readonly customersApi = inject(CustomersApiService);
   private readonly measurementsApi = inject(MeasurementsApiService);
+  private readonly garmentTypesApi = inject(GarmentTypeService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  private configuredType: ClothingType | null = null;
+  private configuredGarmentTypeId: string | null = null;
   private allowNavigation = false;
   private focusFirst = false;
 
@@ -83,8 +84,9 @@ export class MeasurementFormPageComponent {
   readonly editMode = this.measurementId !== null;
   readonly wholeInputs = viewChildren<ElementRef<HTMLInputElement>>('wholeInput');
   readonly customer = signal<Customer | null>(null);
-  readonly fields = signal<readonly MeasurementFieldDefinition[]>([]);
-  readonly activeField = signal<MeasurementFieldKey | null>(null);
+  readonly garmentTypes = signal<readonly GarmentType[]>([]);
+  readonly fields = signal<readonly MeasurementField[]>([]);
+  readonly activeField = signal<string | null>(null);
   readonly completedFields = signal(0);
   readonly loading = signal(true);
   readonly loadError = signal<string | null>(null);
@@ -100,7 +102,8 @@ export class MeasurementFormPageComponent {
   );
 
   readonly form = new FormGroup({
-    clothingType: new FormControl<ClothingType | null>(null, Validators.required),
+    garmentTypeId: new FormControl<string | null>(null, Validators.required),
+    clothingType: new FormControl<ClothingType | null>(null),
     fitPreference: new FormControl<FitPreference | null>(null),
     measuredAt: new FormControl(this.currentLocalDateTime(), {
       nonNullable: true,
@@ -118,30 +121,30 @@ export class MeasurementFormPageComponent {
         queueMicrotask(() => inputs[0]?.nativeElement.focus());
       }
     });
-    this.form.controls.clothingType.valueChanges
+    this.form.controls.garmentTypeId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((type) => this.changeType(type));
+      .subscribe((garmentTypeId) => this.changeGarmentType(garmentTypeId));
     this.form.controls.measurements.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.updateProgress());
     this.loadData();
   }
 
-  entry(field: MeasurementFieldDefinition): EntryGroup {
+  entry(field: MeasurementField): EntryGroup {
     const control = this.form.controls.measurements.controls[field.key];
     if (!control) throw new Error(`Missing measurement control: ${field.key}`);
     return control;
   }
 
-  formattedValue(field: MeasurementFieldDefinition): string {
+  formattedValue(field: MeasurementField): string {
     const value = this.decimalValue(this.entry(field));
     return value === null ? 'Not entered' : formatMeasurement(value);
   }
 
-  fieldError(field: MeasurementFieldDefinition): string | null {
+  fieldError(field: MeasurementField): string | null {
     const control = this.entry(field);
     if (!control.touched || !control.errors) return null;
-    if (control.hasError('requiredMeasurement')) return `${field.label} is required.`;
+    if (control.hasError('requiredMeasurement')) return `${field.name} is required.`;
     if (control.hasError('incompleteMeasurement')) return 'Enter whole inches for this fraction.';
     if (control.hasError('wholeInches')) return 'Use a whole number for whole inches.';
     if (control.hasError('negativeMeasurement')) return 'Measurement cannot be negative.';
@@ -149,14 +152,14 @@ export class MeasurementFormPageComponent {
     return null;
   }
 
-  activate(field: MeasurementFieldDefinition): void {
+  activate(field: MeasurementField): void {
     this.activeField.set(field.key);
   }
-  clearField(field: MeasurementFieldDefinition): void {
+  clearField(field: MeasurementField): void {
     this.entry(field).reset({ whole: null, fraction: 0 });
     this.entry(field).markAsDirty();
   }
-  adjust(field: MeasurementFieldDefinition, direction: 1 | -1): void {
+  adjust(field: MeasurementField, direction: 1 | -1): void {
     const control = this.entry(field);
     const current = this.decimalValue(control);
     if (current === null && direction === -1) return;
@@ -171,8 +174,8 @@ export class MeasurementFormPageComponent {
 
   copyLatest(): void {
     const customer = this.customer();
-    const type = this.form.controls.clothingType.value;
-    if (!customer || !type || this.copying()) return;
+    const garmentTypeId = this.form.controls.garmentTypeId.value;
+    if (!customer || !garmentTypeId || this.copying()) return;
     if (
       this.completedFields() &&
       !window.confirm('Replace the entered values with the latest measurement?')
@@ -188,7 +191,7 @@ export class MeasurementFormPageComponent {
       )
       .subscribe({
         next: (items) => {
-          const latest = items.find((item) => item.clothingType === type);
+          const latest = items.find((item) => item.garmentTypeId === garmentTypeId);
           if (!latest) {
             this.copyMessage.set('No previous measurement exists for this garment type.');
             return;
@@ -222,14 +225,14 @@ export class MeasurementFormPageComponent {
       return;
     }
     const value = this.form.getRawValue();
-    if (!value.clothingType) return;
+    if (!value.garmentTypeId) return;
     const measurements: Record<string, number> = {};
     const unusual: string[] = [];
     for (const field of this.fields()) {
       const decimal = this.decimalValue(this.entry(field));
       if (decimal === null) continue;
       measurements[field.key] = decimal;
-      if (decimal > 100) unusual.push(`${field.label}: ${formatMeasurement(decimal)}`);
+      if (decimal > 100) unusual.push(`${field.name}: ${formatMeasurement(decimal)}`);
     }
     if (
       unusual.length &&
@@ -239,7 +242,8 @@ export class MeasurementFormPageComponent {
     )
       return;
     const commonRequest: UpdateMeasurementRequest = {
-      clothingType: value.clothingType,
+      garmentTypeId: value.garmentTypeId,
+      ...(value.clothingType ? { clothingType: value.clothingType } : {}),
       measurements,
       ...(value.fitPreference ? { fitPreference: value.fitPreference } : {}),
       notes: value.notes.trim(),
@@ -249,7 +253,7 @@ export class MeasurementFormPageComponent {
       customerId: customer.customerId,
       version: 1,
       ...commonRequest,
-      clothingType: value.clothingType,
+      garmentTypeId: value.garmentTypeId,
       measurements,
       ...(value.notes.trim() ? { notes: value.notes.trim() } : {}),
       measuredAt: new Date(value.measuredAt).toISOString(),
@@ -298,8 +302,19 @@ export class MeasurementFormPageComponent {
     return value.charAt(0) + value.slice(1).toLowerCase();
   }
 
-  private changeType(type: ClothingType | null): void {
-    const nextFields = type ? MEASUREMENT_FIELDS[type] : [];
+  selectedGarmentTypeName(): string {
+    const garmentTypeId = this.form.controls.garmentTypeId.value;
+    return (
+      this.garmentTypes().find((garmentType) => garmentType.garmentTypeId === garmentTypeId)
+        ?.name ?? 'Garment'
+    );
+  }
+
+  private changeGarmentType(garmentTypeId: string | null): void {
+    const garmentType = this.garmentTypes().find((item) => item.garmentTypeId === garmentTypeId);
+    const nextFields = [...(garmentType?.measurementFields ?? [])].sort(
+      (left, right) => left.sortOrder - right.sortOrder,
+    );
     const nextKeys = new Set(nextFields.map((field) => field.key));
     const incompatible = this.fields().some(
       (field) => !nextKeys.has(field.key) && this.decimalValue(this.entry(field)) !== null,
@@ -308,10 +323,12 @@ export class MeasurementFormPageComponent {
       incompatible &&
       !window.confirm('Changing garment type will clear measurements that do not apply. Continue?')
     ) {
-      this.form.controls.clothingType.setValue(this.configuredType, { emitEvent: false });
+      this.form.controls.garmentTypeId.setValue(this.configuredGarmentTypeId, {
+        emitEvent: false,
+      });
       return;
     }
-    const previous = new Map<MeasurementFieldKey, number>();
+    const previous = new Map<string, number>();
     for (const field of this.fields()) {
       const value = this.decimalValue(this.entry(field));
       if (value !== null && nextKeys.has(field.key)) previous.set(field.key, value);
@@ -324,7 +341,7 @@ export class MeasurementFormPageComponent {
       if (prior !== undefined) this.setEntryValue(control, prior);
       this.form.controls.measurements.addControl(field.key, control, { emitEvent: false });
     }
-    this.configuredType = type;
+    this.configuredGarmentTypeId = garmentTypeId;
     this.fields.set(nextFields);
     this.activeField.set(nextFields[0]?.key ?? null);
     this.updateProgress();
@@ -355,42 +372,51 @@ export class MeasurementFormPageComponent {
   private loadData(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    this.customersApi
-      .getById(this.customerRecordId)
-      .pipe(
-        switchMap((customer) => {
-          if (!this.editMode) return of({ customer, measurement: null });
-          return this.measurementsApi.getByCustomer(customer.customerId).pipe(
-            map((measurements) => ({
-              customer,
-              measurement:
+    const measurement$ = this.editMode
+      ? this.measurementsApi
+          .getByCustomer(this.customerRecordId)
+          .pipe(
+            map(
+              (measurements) =>
                 measurements.find((measurement) => measurement._id === this.measurementId) ?? null,
-            })),
-          );
-        }),
+            ),
+          )
+      : of(null);
+
+    forkJoin({
+      customer: this.customersApi.getById(this.customerRecordId),
+      garmentTypes: this.garmentTypesApi.list(),
+      measurement: measurement$,
+    })
+      .pipe(
         finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: ({ customer, measurement }) => {
+        next: ({ customer, garmentTypes, measurement }) => {
           this.customer.set(customer);
+          this.garmentTypes.set(garmentTypes);
           if (this.editMode && !measurement) {
             this.loadError.set('Measurement not found.');
             return;
           }
-          if (measurement) this.populateMeasurement(measurement);
+          if (measurement) {
+            this.populateMeasurement(measurement);
+          }
         },
         error: (error: unknown) =>
           this.loadError.set(
-            error instanceof ApiError ? error.message : 'Customer could not be loaded.',
+            error instanceof ApiError ? error.message : 'Measurement setup could not be loaded.',
           ),
       });
   }
   private populateMeasurement(measurement: Measurement): void {
-    this.form.controls.clothingType.setValue(measurement.clothingType);
+    this.form.controls.garmentTypeId.setValue(measurement.garmentTypeId, { emitEvent: false });
+    this.form.controls.clothingType.setValue(measurement.clothingType ?? null);
     this.form.controls.fitPreference.setValue(measurement.fitPreference ?? null);
     this.form.controls.measuredAt.setValue(this.toLocalDateTime(measurement.measuredAt));
     this.form.controls.notes.setValue(measurement.notes ?? '');
+    this.changeGarmentType(measurement.garmentTypeId);
     for (const field of this.fields()) {
       const value = measurement.measurements[field.key];
       if (Number.isFinite(value)) this.setEntryValue(this.entry(field), value);
