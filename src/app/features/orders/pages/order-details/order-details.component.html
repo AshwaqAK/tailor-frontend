@@ -17,7 +17,8 @@
     <div class="alert alert-danger d-flex justify-content-between" role="alert">
       <span>{{ message }}</span>
       <button class="btn btn-sm btn-outline-danger" type="button" (click)="load()">
-        Try again
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
       </button>
     </div>
   }
@@ -47,6 +48,7 @@
             [disabled]="updating()"
             (click)="updateStatus(status)"
           >
+            <i class="bi bi-arrow-repeat fs-6 me-1" aria-hidden="true"></i>
             {{ label(status) }}
           </button>
         }
@@ -99,7 +101,10 @@
 
     <section class="payments-section" aria-labelledby="payments-heading">
       <div class="section-heading d-flex align-items-center justify-content-between gap-3 mb-3">
-        <h2 id="payments-heading" class="h5 mb-0">Payments</h2>
+        <h2 id="payments-heading" class="h5 mb-0">
+          <i class="bi bi-clock-history fs-6 me-1" aria-hidden="true"></i>
+          <span>Payments</span>
+        </h2>
 
         @if (!paymentFormOpen()) {
           <button
@@ -108,7 +113,8 @@
             [disabled]="paymentDetailsRefreshing()"
             (click)="openPaymentForm()"
           >
-            Add payment
+            <i class="bi bi-cash-coin fs-6 me-1" aria-hidden="true"></i>
+            <span>Add payment</span>
           </button>
         }
       </div>
@@ -129,7 +135,8 @@
             type="button"
             (click)="refreshPaymentData()"
           >
-            Try again
+            <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+            <span>Try again</span>
           </button>
         </div>
       }
@@ -191,7 +198,9 @@
             </div>
 
             <div class="col-md-6">
-              <label class="form-label" for="payment-reference">Reference</label>
+              <label class="form-label" for="payment-reference"
+                ><i class="bi bi-receipt fs-6 me-1" aria-hidden="true"></i>Reference</label
+              >
 
               <input
                 class="form-control"
@@ -238,15 +247,18 @@
               type="button"
               (click)="closePaymentForm()"
             >
-              Cancel
+              <i class="bi bi-x-circle fs-6 me-1" aria-hidden="true"></i>
+              <span>Cancel</span>
             </button>
 
             <button class="btn btn-sm btn-primary" type="submit" [disabled]="paymentSubmitting()">
               @if (paymentSubmitting()) {
                 <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+              } @else {
+                <i class="bi bi-check-circle fs-6 me-1" aria-hidden="true"></i>
               }
 
-              Save payment
+              <span>Save payment</span>
             </button>
           </div>
         </form>
@@ -260,7 +272,8 @@
           <span>{{ message }}</span>
 
           <button class="btn btn-sm btn-outline-danger" type="button" (click)="loadPayments()">
-            Try again
+            <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+            <span>Try again</span>
           </button>
         </div>
       } @else if (paymentsLoading()) {

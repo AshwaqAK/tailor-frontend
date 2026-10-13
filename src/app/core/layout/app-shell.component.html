@@ -36,42 +36,56 @@
   <aside class="sidebar bg-white border-end" [class.sidebar-open]="sidebarOpen()">
     <nav class="nav nav-pills flex-column gap-1 p-3" aria-label="Primary navigation">
       <a
-        class="nav-link"
+        class="nav-link d-flex align-items-center gap-2"
         routerLink="/dashboard"
         routerLinkActive="active"
         (click)="closeSidebar()"
       >
-        Dashboard
+        <i class="bi bi-speedometer2 app-shell-nav-icon fs-6" aria-hidden="true"></i>
+        <span>Dashboard</span>
       </a>
       <a
-        class="nav-link"
+        class="nav-link d-flex align-items-center gap-2"
         routerLink="/customers"
         routerLinkActive="active"
         (click)="closeSidebar()"
       >
-        Customers
+        <i class="bi bi-people app-shell-nav-icon fs-6" aria-hidden="true"></i>
+        <span>Customers</span>
       </a>
-      <a class="nav-link" routerLink="/orders" routerLinkActive="active" (click)="closeSidebar()"
-        >Orders</a
+      <a
+        class="nav-link d-flex align-items-center gap-2"
+        routerLink="/orders"
+        routerLinkActive="active"
+        (click)="closeSidebar()"
+        ><i class="bi bi-clipboard-check app-shell-nav-icon fs-6" aria-hidden="true"></i
+        ><span>Orders</span></a
       >
       <a
-        class="nav-link"
+        class="nav-link d-flex align-items-center gap-2"
         routerLink="/appointments"
         routerLinkActive="active"
         (click)="closeSidebar()"
       >
-        Appointments
+        <i class="bi bi-calendar-event app-shell-nav-icon fs-6" aria-hidden="true"></i>
+        <span>Appointments</span>
       </a>
-      <a class="nav-link" routerLink="/fabrics" routerLinkActive="active" (click)="closeSidebar()"
-        >Fabrics</a
+      <a
+        class="nav-link d-flex align-items-center gap-2"
+        routerLink="/fabrics"
+        routerLinkActive="active"
+        (click)="closeSidebar()"
+        ><i class="bi bi-scissors app-shell-nav-icon fs-6" aria-hidden="true"></i
+        ><span>Fabrics</span></a
       >
       <a
-        class="nav-link"
+        class="nav-link d-flex align-items-center gap-2"
         routerLink="/garment-types"
         routerLinkActive="active"
         (click)="closeSidebar()"
       >
-        Garment Types
+        <i class="bi bi-tags app-shell-nav-icon fs-6" aria-hidden="true"></i>
+        <span>Garment Types</span>
       </a>
     </nav>
   </aside>

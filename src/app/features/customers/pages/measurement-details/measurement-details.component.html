@@ -23,7 +23,8 @@
     >
       <span>{{ errorMessage }}</span
       ><button class="btn btn-sm btn-outline-danger" type="button" (click)="load()">
-        Try again
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
       </button>
     </div>
   } @else if (measurement(); as currentMeasurement) {
@@ -46,7 +47,10 @@
           >Back to customer</a
         >
         @if (canEdit()) {
-          <a class="btn btn-primary action-control" [routerLink]="['edit']">Edit measurement</a>
+          <a class="btn btn-primary action-control" [routerLink]="['edit']"
+            ><i class="bi bi-pencil fs-6 me-1" aria-hidden="true"></i
+            ><span>Edit measurement</span></a
+          >
         }
       </div>
     </header>

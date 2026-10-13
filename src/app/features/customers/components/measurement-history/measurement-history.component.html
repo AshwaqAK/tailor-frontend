@@ -4,12 +4,16 @@
       class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4"
     >
       <div>
-        <h2 id="measurements-heading" class="h5 mb-1">Measurement history</h2>
+        <h2 id="measurements-heading" class="h5 mb-1">
+          <i class="bi bi-clock-history fs-6 me-1" aria-hidden="true"></i>
+          <span>Measurement history</span>
+        </h2>
         <p class="text-body-secondary small mb-0">All values are recorded in inches.</p>
       </div>
       @if (canCreate()) {
         <a class="btn btn-primary action-control" [routerLink]="['measurements', 'new']"
-          >Add measurement</a
+          ><i class="bi bi-plus-circle fs-6 me-1" aria-hidden="true"></i
+          ><span>Add measurement</span></a
         >
       }
     </div>
@@ -26,7 +30,8 @@
       >
         <span>{{ errorMessage }}</span>
         <button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
-          Try again
+          <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+          <span>Try again</span>
         </button>
       </div>
     } @else if (measurements().length === 0) {
@@ -64,13 +69,14 @@
                     <a
                       class="btn btn-sm btn-outline-primary action-control"
                       [routerLink]="['measurements', measurement._id]"
-                      >View</a
+                      ><i class="bi bi-eye fs-6 me-1" aria-hidden="true"></i><span>View</span></a
                     >
                     @if (canCreate()) {
                       <a
                         class="btn btn-sm btn-outline-secondary action-control"
                         [routerLink]="['measurements', measurement._id, 'edit']"
-                        >Edit</a
+                        ><i class="bi bi-pencil fs-6 me-1" aria-hidden="true"></i
+                        ><span>Edit</span></a
                       >
                     }
                   </div>
@@ -94,13 +100,15 @@
             <a
               class="btn btn-outline-primary action-control w-100"
               [routerLink]="['measurements', measurement._id]"
-              >View details</a
+              ><i class="bi bi-eye fs-6 me-1" aria-hidden="true"></i
+              ><span>View details</span></a
             >
             @if (canCreate()) {
               <a
                 class="btn btn-outline-secondary action-control w-100 mt-2"
                 [routerLink]="['measurements', measurement._id, 'edit']"
-                >Edit measurement</a
+                ><i class="bi bi-pencil fs-6 me-1" aria-hidden="true"></i
+                ><span>Edit measurement</span></a
               >
             }
           </article>

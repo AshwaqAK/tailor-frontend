@@ -16,7 +16,8 @@
     <div class="alert alert-danger d-flex justify-content-between" role="alert">
       <span>{{ message }}</span>
       <button class="btn btn-sm btn-outline-danger" type="button" (click)="retryGarmentTypes()">
-        Try again
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
       </button>
     </div>
   }
@@ -37,7 +38,8 @@
             </button>
           </div>
         } @else {
-          <label class="form-label" for="customer-search">Search customer</label
+          <label class="form-label" for="customer-search"
+            ><i class="bi bi-search fs-6 me-1" aria-hidden="true"></i>Search customer</label
           ><input
             id="customer-search"
             class="form-control"
@@ -432,7 +434,8 @@
                   type="button"
                   (click)="retryFabrics()"
                 >
-                  Retry
+                  <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+                  <span>Retry</span>
                 </button>
               </div>
             }
@@ -474,8 +477,10 @@
         [disabled]="submitting()"
         (click)="cancel()"
       >
-        Cancel</button
+        <i class="bi bi-x-circle fs-6 me-1" aria-hidden="true"></i>
+        <span>Cancel</span></button
       ><button class="btn btn-primary" type="submit" [disabled]="submitting()">
+        <i class="bi bi-check-circle fs-6 me-1" aria-hidden="true"></i>
         {{ submitting() ? 'Creating…' : 'Create order' }}
       </button>
     </footer>

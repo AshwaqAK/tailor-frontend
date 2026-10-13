@@ -9,7 +9,8 @@
     </div>
     @if (canCreate()) {
       <a class="btn btn-primary" routerLink="new" [queryParams]="customerQueryParams()">
-        Add customer
+        <i class="bi bi-person-plus fs-6 me-1" aria-hidden="true"></i>
+        <span>Add customer</span>
       </a>
     }
   </header>
@@ -25,7 +26,8 @@
     >
       <span>{{ errorMessage }}</span>
       <button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
-        Try again
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
       </button>
     </div>
   }
@@ -34,7 +36,9 @@
     <div class="card-body">
       <div class="row g-3 align-items-end">
         <div class="col-12 col-lg-6">
-          <label class="form-label" for="customer-search">Search customers</label>
+          <label class="form-label" for="customer-search"
+            ><i class="bi bi-search fs-6 me-1" aria-hidden="true"></i>Search customers</label
+          >
           <input
             id="customer-search"
             class="form-control"
@@ -104,7 +108,10 @@
             Clear filters
           </button>
         } @else if (canCreate()) {
-          <a class="btn btn-primary" routerLink="new">Add first customer</a>
+          <a class="btn btn-primary" routerLink="new">
+            <i class="bi bi-person-plus fs-6 me-1" aria-hidden="true"></i>
+            <span>Add first customer</span>
+          </a>
         }
       </div>
     </div>
@@ -160,14 +167,15 @@
                       class="btn btn-sm btn-outline-primary action-control"
                       [routerLink]="[customer._id]"
                       [queryParams]="customerQueryParams()"
-                      >View</a
+                      ><i class="bi bi-eye fs-6 me-1" aria-hidden="true"></i><span>View</span></a
                     >
                     @if (canManage()) {
                       <a
                         class="btn btn-sm btn-outline-secondary action-control"
                         [routerLink]="[customer._id, 'edit']"
                         [queryParams]="customerQueryParams()"
-                        >Edit</a
+                        ><i class="bi bi-pencil fs-6 me-1" aria-hidden="true"></i
+                        ><span>Edit</span></a
                       >
                     }
                   </div>
@@ -199,14 +207,16 @@
                 class="btn btn-outline-primary action-control"
                 [routerLink]="[customer._id]"
                 [queryParams]="customerQueryParams()"
-                >View details</a
+                ><i class="bi bi-eye fs-6 me-1" aria-hidden="true"></i
+                ><span>View details</span></a
               >
               @if (canManage()) {
                 <a
                   class="btn btn-outline-secondary action-control"
                   [routerLink]="[customer._id, 'edit']"
                   [queryParams]="customerQueryParams()"
-                  >Edit</a
+                  ><i class="bi bi-pencil fs-6 me-1" aria-hidden="true"></i
+                  ><span>Edit</span></a
                 >
                 @if (customer.isActive) {
                   <button
