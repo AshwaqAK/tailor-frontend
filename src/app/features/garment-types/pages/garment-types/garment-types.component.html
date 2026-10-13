@@ -1,0 +1,127 @@
+<div class="container-fluid px-0">
+  <header class="d-flex justify-content-between gap-3 mb-4">
+    <div>
+      <p class="text-uppercase text-primary fw-semibold small mb-1">Catalog</p>
+      <h1 class="h2 mb-1">Garment types</h1>
+      <p class="text-body-secondary mb-0">
+        Garment types, tailoring services, customizations, and measurement definitions.
+      </p>
+    </div>
+    @if (canManage()) {
+      <a class="btn btn-primary align-self-start" routerLink="new">Add garment type</a>
+    }
+  </header>
+
+  @if (success(); as message) {
+    <div class="alert alert-success" role="status">{{ message }}</div>
+  }
+
+  @if (error(); as message) {
+    <div class="alert alert-danger d-flex justify-content-between" role="alert">
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
+        Try again
+      </button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary"></span>
+        <p class="mt-3 mb-0">Loading garment types…</p>
+      </div>
+    </div>
+  } @else if (!error() && garmentTypes().length === 0) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h2 class="h5">No garment types found</h2>
+        <p class="text-body-secondary mb-0">Garment type management will be added next.</p>
+      </div>
+    </div>
+  } @else if (!error()) {
+    <section class="card border-0 shadow-sm overflow-hidden">
+      <div class="table-responsive d-none d-md-block">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Garment type</th>
+              <th>Base tailoring price</th>
+              <th>Customization groups</th>
+              <th>Measurement fields</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (garmentType of garmentTypes(); track garmentType._id) {
+              <tr>
+                <td>
+                  <strong>{{ garmentType.name }}</strong>
+                  <span class="d-block small text-body-secondary">{{ garmentType.code }}</span>
+                </td>
+                <td>
+                  @if (canManage()) {
+                    <a
+                      class="btn btn-sm btn-outline-primary"
+                      [routerLink]="[garmentType.garmentTypeId, 'edit']"
+                      >Edit</a
+                    >
+                  }
+                </td>
+                <td>
+                  {{ garmentType.tailoringService.basePrice | currency: 'INR' }}
+                </td>
+                <td>{{ garmentType.customizationGroups.length }}</td>
+                <td>{{ garmentType.measurementFields.length }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.text-bg-success]="garmentType.isActive"
+                    [class.text-bg-secondary]="!garmentType.isActive"
+                    >{{ garmentType.isActive ? 'Active' : 'Inactive' }}</span
+                  >
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="d-md-none p-3">
+        @for (garmentType of garmentTypes(); track garmentType._id) {
+          <article class="garment-type-card border rounded p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+              <div>
+                <h2 class="h6 mb-1">{{ garmentType.name }}</h2>
+                <p class="small text-body-secondary mb-0">{{ garmentType.code }}</p>
+              </div>
+              <span
+                class="badge"
+                [class.text-bg-success]="garmentType.isActive"
+                [class.text-bg-secondary]="!garmentType.isActive"
+                >{{ garmentType.isActive ? 'Active' : 'Inactive' }}</span
+              >
+            </div>
+            <dl class="row small mb-0 mt-3">
+              <dt class="col-7">Base tailoring price</dt>
+              <dd class="col-5 text-end">
+                {{ garmentType.tailoringService.basePrice | currency: 'INR' }}
+              </dd>
+              <dt class="col-7">Customization groups</dt>
+              <dd class="col-5 text-end">{{ garmentType.customizationGroups.length }}</dd>
+              <dt class="col-7">Measurement fields</dt>
+              <dd class="col-5 text-end">{{ garmentType.measurementFields.length }}</dd>
+            </dl>
+            @if (canManage()) {
+              <a
+                class="btn btn-outline-primary btn-sm w-100"
+                [routerLink]="[garmentType.garmentTypeId, 'edit']"
+                >Edit garment type</a
+              >
+            }
+          </article>
+        }
+      </div>
+    </section>
+  }
+</div>

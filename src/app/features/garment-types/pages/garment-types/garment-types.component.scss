@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+.garment-type-card {
+  background: var(--color-surface);
+  border-color: var(--color-border-light) !important;
+}
+
+.garment-type-card dt {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.garment-type-card dd {
+  margin-bottom: 0.5rem;
+}

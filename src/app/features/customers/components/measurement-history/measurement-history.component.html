@@ -50,7 +50,7 @@
           <tbody>
             @for (measurement of measurements(); track measurement._id) {
               <tr>
-                <td class="fw-semibold">{{ label(measurement.clothingType) }}</td>
+                <td class="fw-semibold">{{ label(measurement.clothingType ?? '') }}</td>
                 <td>{{ measurement.version }}</td>
                 <td>{{ measurement.measuredAt | date: 'mediumDate' }}</td>
                 <td>
@@ -84,7 +84,7 @@
         @for (measurement of measurements(); track measurement._id) {
           <article class="measurement-card border rounded p-3 mb-3">
             <div class="d-flex justify-content-between gap-2 mb-2">
-              <h3 class="h6 mb-0">{{ label(measurement.clothingType) }}</h3>
+              <h3 class="h6 mb-0">{{ label(measurement.clothingType ?? '') }}</h3>
               <span class="badge text-bg-light">Version {{ measurement.version }}</span>
             </div>
             <p class="small text-body-secondary mb-3">

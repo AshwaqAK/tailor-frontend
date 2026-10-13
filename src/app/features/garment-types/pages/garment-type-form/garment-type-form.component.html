@@ -1,0 +1,402 @@
+<div class="container-fluid px-0">
+  <nav aria-label="Breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/garment-types">Garment types</a></li>
+      <li class="breadcrumb-item active">
+        {{ editMode ? 'Edit garment type' : 'New garment type' }}
+      </li>
+    </ol>
+  </nav>
+
+  <h1 class="h2 mb-4">{{ editMode ? 'Edit garment type' : 'New garment type' }}</h1>
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary"></span>
+      </div>
+    </div>
+  } @else {
+    @if (success(); as message) {
+      <div class="alert alert-success" role="status">{{ message }}</div>
+    }
+    @if (error(); as message) {
+      <div class="alert alert-danger" role="alert">{{ message }}</div>
+    }
+    @if (customizationError(); as message) {
+      <div class="alert alert-warning" role="alert">{{ message }}</div>
+    }
+    @if (measurementError(); as message) {
+      <div class="alert alert-warning" role="alert">{{ message }}</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="card border-0 shadow-sm">
+      <div class="card-body p-3 p-md-4">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="garment-name">Garment name *</label>
+            <input id="garment-name" class="form-control" formControlName="name" />
+            @if (form.controls.name.invalid && form.controls.name.touched) {
+              <div class="invalid-feedback d-block">Enter a garment name.</div>
+            }
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="garment-code">Code *</label>
+            <input
+              id="garment-code"
+              class="form-control"
+              formControlName="code"
+              placeholder="e.g. SHIRT"
+              autocomplete="off"
+            />
+            @if (form.controls.code.invalid && form.controls.code.touched) {
+              <div class="invalid-feedback d-block">
+                Use uppercase letters, numbers, underscores, or hyphens only.
+              </div>
+            }
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="base-price">Base tailoring price *</label>
+            <input
+              id="base-price"
+              class="form-control"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              formControlName="basePrice"
+            />
+            @if (form.controls.basePrice.invalid && form.controls.basePrice.touched) {
+              <div class="invalid-feedback d-block">Enter a non-negative price.</div>
+            }
+          </div>
+        </div>
+
+        <div class="border-top mt-4 pt-4">
+          <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <div>
+              <h2 class="h5 mb-1">Customization groups</h2>
+              <p class="small text-body-secondary mb-0">
+                Configure optional garment choices and their prices.
+              </p>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" type="button" (click)="addGroup()">
+              Add group
+            </button>
+          </div>
+
+          <div formArrayName="customizationGroups">
+            @for (group of groups.controls; track $index; let groupIndex = $index) {
+              <section
+                class="customization-group border rounded p-3 mb-3"
+                [formGroupName]="groupIndex"
+              >
+                <div class="row g-3 align-items-end">
+                  <div class="col-md-7">
+                    <label class="form-label" [for]="'group-name-' + groupIndex"
+                      >Group name / key *</label
+                    >
+                    <input
+                      class="form-control"
+                      [id]="'group-name-' + groupIndex"
+                      formControlName="name"
+                      placeholder="e.g. Collar"
+                    />
+                    @if (group.get('name')?.invalid && group.get('name')?.touched) {
+                      <div class="invalid-feedback d-block">Enter a group name.</div>
+                    }
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" [for]="'group-order-' + groupIndex"
+                      >Sort order *</label
+                    >
+                    <input
+                      class="form-control"
+                      [id]="'group-order-' + groupIndex"
+                      type="number"
+                      min="0"
+                      step="1"
+                      formControlName="sortOrder"
+                    />
+                  </div>
+                  <div class="col-md-2 d-grid">
+                    <button
+                      class="btn btn-outline-danger"
+                      type="button"
+                      (click)="removeGroup(groupIndex)"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                <div class="mt-3" formArrayName="options">
+                  <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+                    <h3 class="h6 mb-0">Options</h3>
+                    <button
+                      class="btn btn-outline-secondary btn-sm"
+                      type="button"
+                      (click)="addOption(groupIndex)"
+                    >
+                      Add option
+                    </button>
+                  </div>
+
+                  @for (
+                    option of groupOptions(groupIndex).controls;
+                    track $index;
+                    let optionIndex = $index
+                  ) {
+                    <div class="option-row border-top pt-3 mt-3" [formGroupName]="optionIndex">
+                      <div class="row g-3 align-items-end">
+                        <div class="col-lg-3">
+                          <label
+                            class="form-label"
+                            [for]="'option-name-' + groupIndex + '-' + optionIndex"
+                            >Option name *</label
+                          >
+                          <input
+                            class="form-control"
+                            [id]="'option-name-' + groupIndex + '-' + optionIndex"
+                            formControlName="name"
+                          />
+                          @if (option.get('name')?.invalid && option.get('name')?.touched) {
+                            <div class="invalid-feedback d-block">Enter an option name.</div>
+                          }
+                        </div>
+                        <div class="col-lg-3">
+                          <label
+                            class="form-label"
+                            [for]="'option-type-' + groupIndex + '-' + optionIndex"
+                            >Input type *</label
+                          >
+                          <select
+                            class="form-select"
+                            [id]="'option-type-' + groupIndex + '-' + optionIndex"
+                            formControlName="inputType"
+                            (change)="inputTypeChanged(groupIndex, optionIndex)"
+                          >
+                            @for (inputType of inputTypes; track inputType) {
+                              <option [ngValue]="inputType">{{ inputType }}</option>
+                            }
+                          </select>
+                        </div>
+                        <div class="col-lg-2">
+                          <label
+                            class="form-label"
+                            [for]="'option-price-type-' + groupIndex + '-' + optionIndex"
+                            >Pricing type *</label
+                          >
+                          <select
+                            class="form-select"
+                            [id]="'option-price-type-' + groupIndex + '-' + optionIndex"
+                            formControlName="pricingType"
+                            [disabled]="isTextOption(groupIndex, optionIndex)"
+                          >
+                            @for (pricingType of pricingTypes; track pricingType) {
+                              <option [ngValue]="pricingType">{{ pricingType }}</option>
+                            }
+                          </select>
+                        </div>
+                        <div class="col-lg-2">
+                          <label
+                            class="form-label"
+                            [for]="'option-price-' + groupIndex + '-' + optionIndex"
+                          >
+                            {{ isTextOption(groupIndex, optionIndex) ? 'Price' : 'Price *' }}
+                          </label>
+                          <input
+                            class="form-control"
+                            [id]="'option-price-' + groupIndex + '-' + optionIndex"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            inputmode="decimal"
+                            formControlName="price"
+                            [disabled]="isTextOption(groupIndex, optionIndex)"
+                          />
+                          @if (isTextOption(groupIndex, optionIndex)) {
+                            <div class="form-text">TEXT has no automatic pricing.</div>
+                          } @else if (option.get('pricingType')?.value === 'PER_UNIT') {
+                            <div class="form-text">Per-unit price.</div>
+                          }
+                        </div>
+                        <div class="col-lg-1">
+                          <label
+                            class="form-label"
+                            [for]="'option-order-' + groupIndex + '-' + optionIndex"
+                            >Order *</label
+                          >
+                          <input
+                            class="form-control"
+                            [id]="'option-order-' + groupIndex + '-' + optionIndex"
+                            type="number"
+                            min="0"
+                            step="1"
+                            formControlName="sortOrder"
+                          />
+                        </div>
+                        <div class="col-lg-1 d-grid">
+                          <button
+                            class="btn btn-outline-danger"
+                            type="button"
+                            (click)="removeOption(groupIndex, optionIndex)"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  } @empty {
+                    <p class="small text-body-secondary border-top pt-3 mt-3 mb-0">
+                      No options configured for this group.
+                    </p>
+                  }
+                </div>
+              </section>
+            } @empty {
+              <p class="small text-body-secondary mb-0">No customization groups configured.</p>
+            }
+          </div>
+        </div>
+
+        <div class="border-top mt-4 pt-4">
+          <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <div>
+              <h2 class="h5 mb-1">Measurement fields</h2>
+              <p class="small text-body-secondary mb-0">
+                Define the INCH measurements required for this garment.
+              </p>
+            </div>
+            <button
+              class="btn btn-outline-primary btn-sm"
+              type="button"
+              (click)="addMeasurementField()"
+            >
+              Add field
+            </button>
+          </div>
+
+          <div formArrayName="measurementFields">
+            @for (field of measurementFields.controls; track $index; let fieldIndex = $index) {
+              <div class="measurement-field border rounded p-3 mb-3" [formGroupName]="fieldIndex">
+                <div class="row g-3 align-items-end">
+                  <div class="col-lg-3">
+                    <label class="form-label" [for]="'measurement-key-' + fieldIndex">Key *</label>
+                    <input
+                      class="form-control"
+                      [id]="'measurement-key-' + fieldIndex"
+                      formControlName="key"
+                      placeholder="e.g. chest"
+                    />
+                    @if (field.get('key')?.invalid && field.get('key')?.touched) {
+                      <div class="invalid-feedback d-block">
+                        Use a letter-led key with letters, numbers, or underscores.
+                      </div>
+                    }
+                  </div>
+                  <div class="col-lg-3">
+                    <label class="form-label" [for]="'measurement-name-' + fieldIndex"
+                      >Name *</label
+                    >
+                    <input
+                      class="form-control"
+                      [id]="'measurement-name-' + fieldIndex"
+                      formControlName="name"
+                      placeholder="e.g. Chest"
+                    />
+                    @if (field.get('name')?.invalid && field.get('name')?.touched) {
+                      <div class="invalid-feedback d-block">Enter a measurement name.</div>
+                    }
+                  </div>
+                  <div class="col-lg-2">
+                    <label class="form-label" [for]="'measurement-unit-' + fieldIndex">Unit</label>
+                    <select
+                      class="form-select"
+                      [id]="'measurement-unit-' + fieldIndex"
+                      formControlName="unit"
+                      [disabled]="true"
+                    >
+                      <option [ngValue]="'INCH'">INCH</option>
+                    </select>
+                  </div>
+                  <div class="col-lg-2">
+                    <label class="form-label" [for]="'measurement-order-' + fieldIndex"
+                      >Sort order *</label
+                    >
+                    <input
+                      class="form-control"
+                      [id]="'measurement-order-' + fieldIndex"
+                      type="number"
+                      min="0"
+                      step="1"
+                      formControlName="sortOrder"
+                      (change)="measurementSortOrderChanged()"
+                    />
+                  </div>
+                  <div class="col-lg-2">
+                    <div class="d-flex gap-2">
+                      <div class="form-check flex-grow-1 pt-2">
+                        <input
+                          class="form-check-input"
+                          [id]="'measurement-required-' + fieldIndex"
+                          type="checkbox"
+                          formControlName="required"
+                        />
+                        <label class="form-check-label" [for]="'measurement-required-' + fieldIndex"
+                          >Required</label
+                        >
+                      </div>
+                      <button
+                        class="btn btn-outline-danger"
+                        type="button"
+                        (click)="removeMeasurementField(fieldIndex)"
+                        aria-label="Remove measurement field"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                  <button
+                    class="btn btn-sm btn-outline-secondary"
+                    type="button"
+                    [disabled]="fieldIndex === 0"
+                    (click)="moveMeasurementField(fieldIndex, -1)"
+                  >
+                    Move up
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-secondary"
+                    type="button"
+                    [disabled]="fieldIndex === measurementFields.length - 1"
+                    (click)="moveMeasurementField(fieldIndex, 1)"
+                  >
+                    Move down
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              <p class="small text-body-secondary mb-0">No measurement fields configured.</p>
+            }
+          </div>
+        </div>
+      </div>
+      <footer class="d-flex flex-column flex-sm-row justify-content-end gap-2 border-top p-3">
+        <button class="btn btn-outline-secondary" type="button" (click)="cancel()">Cancel</button>
+        <button class="btn btn-primary" type="submit" [disabled]="submitting()">
+          {{
+            submitting()
+              ? editMode
+                ? 'Saving…'
+                : 'Creating…'
+              : editMode
+                ? 'Save changes'
+                : 'Create garment type'
+          }}
+        </button>
+      </footer>
+    </form>
+  }
+</div>

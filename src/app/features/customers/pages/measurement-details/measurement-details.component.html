@@ -34,7 +34,7 @@
         <p class="text-uppercase text-primary fw-semibold small mb-1">
           {{ customer()?.customerId }} · Version {{ currentMeasurement.version }}
         </p>
-        <h1 class="h2 mb-1">{{ label(currentMeasurement.clothingType) }} measurements</h1>
+        <h1 class="h2 mb-1">{{ label(currentMeasurement.clothingType ?? '') }} measurements</h1>
         <p class="text-body-secondary mb-0">
           Measured {{ currentMeasurement.measuredAt | date: 'medium' }}
         </p>

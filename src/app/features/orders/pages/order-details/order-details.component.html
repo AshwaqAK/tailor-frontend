@@ -328,20 +328,74 @@
           <header class="garment-header d-flex align-items-center justify-content-between gap-3">
             <div>
               <p class="garment-number">Garment {{ index + 1 }}</p>
-              <h3 class="h5 mb-0">{{ label(item.clothingType) }}</h3>
+              <h3 class="h5 mb-0">{{ garmentName(item) }}</h3>
+              @if (item.tailoringPricingSnapshot; as pricing) {
+                <span class="small text-body-secondary">{{ pricing.garmentTypeCode }}</span>
+              }
             </div>
 
             <div class="garment-quantity">Qty: {{ item.quantity }}</div>
           </header>
 
-          <div class="garment-line d-flex justify-content-between gap-3 py-2">
-            <span>
-              Tailoring
-              <small>({{ item.unitPrice | currency: 'INR' }} each)</small>
-            </span>
+          @if (item.tailoringPricingSnapshot; as pricing) {
+            <section class="pricing-snapshot" aria-label="Saved tailoring pricing">
+              <div class="garment-line d-flex justify-content-between gap-3">
+                <span>Base tailoring price</span>
+                <strong>{{ pricing.baseTailoringPrice | currency: 'INR' }}</strong>
+              </div>
 
-            <strong>{{ tailoringTotal(item) | currency: 'INR' }}</strong>
-          </div>
+              @if (pricing.customizationGroups?.length) {
+                <div class="pricing-customizations">
+                  <span class="pricing-label">Selected customizations</span>
+                  @for (group of pricing.customizationGroups; track group.groupName) {
+                    <div class="pricing-group">
+                      <div class="garment-line d-flex justify-content-between gap-3">
+                        <span>{{ group.groupName }}</span>
+                        <strong>{{ group.calculatedCharge | currency: 'INR' }}</strong>
+                      </div>
+                      @for (option of group.options ?? []; track option.optionName) {
+                        <div class="pricing-option d-flex justify-content-between gap-3">
+                          <span>
+                            {{ option.optionName }} · {{ label(option.pricingType) }}
+                            @if (option.submittedValue !== undefined) {
+                              <span>({{ option.submittedValue }})</span>
+                            }
+                          </span>
+                          <span>{{ option.calculatedCharge | currency: 'INR' }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              <div class="garment-line d-flex justify-content-between gap-3">
+                <span>Customization charges</span>
+                <strong>{{ pricing.calculatedCustomizationCharge | currency: 'INR' }}</strong>
+              </div>
+              <div class="garment-line d-flex justify-content-between gap-3">
+                <span>Per-garment tailoring amount</span>
+                <strong>{{ pricing.calculatedPerGarmentTailoringAmount | currency: 'INR' }}</strong>
+              </div>
+              <div class="garment-line d-flex justify-content-between gap-3">
+                <span>Garment quantity</span>
+                <strong>{{ pricing.quantity }}</strong>
+              </div>
+              <div class="garment-line d-flex justify-content-between gap-3 fw-semibold">
+                <span>Total tailoring amount</span>
+                <strong>{{ pricing.finalTailoringTotal | currency: 'INR' }}</strong>
+              </div>
+            </section>
+          } @else {
+            <div class="garment-line d-flex justify-content-between gap-3 py-2">
+              <span>
+                Tailoring
+                <small>({{ item.unitPrice | currency: 'INR' }} each)</small>
+              </span>
+
+              <strong>{{ tailoringTotal(item) | currency: 'INR' }}</strong>
+            </div>
+          }
 
           @if (item.fabricSnapshot; as fabric) {
             <section class="fabric-details" aria-label="Fabric details">
@@ -381,7 +435,7 @@
                 <span>Measurements · Version {{ measurement.measurementVersion }}</span>
 
                 <span class="measurement-summary-meta">
-                  {{ label(measurement.clothingType) }} ·
+                  {{ label(measurement.clothingType ?? '') }} ·
                   {{ measurement.measuredAt | date: 'mediumDate' }}
                 </span>
               </summary>

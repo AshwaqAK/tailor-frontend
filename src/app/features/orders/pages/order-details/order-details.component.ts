@@ -229,7 +229,7 @@ export class OrderDetailsComponent {
     return formatMeasurement(value);
   }
   tailoringTotal(item: OrderItem): number {
-    return item.quantity * item.unitPrice;
+    return item.tailoringPricingSnapshot?.finalTailoringTotal ?? item.quantity * item.unitPrice;
   }
   fabricTotal(item: OrderItem): number {
     const fabric = item.fabricSnapshot;
@@ -237,5 +237,8 @@ export class OrderDetailsComponent {
   }
   garmentTotal(item: OrderItem): number {
     return this.tailoringTotal(item) + this.fabricTotal(item);
+  }
+  garmentName(item: OrderItem): string {
+    return item.tailoringPricingSnapshot?.garmentTypeName || this.label(item.clothingType ?? '');
   }
 }

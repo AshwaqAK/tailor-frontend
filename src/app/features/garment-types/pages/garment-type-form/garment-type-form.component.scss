@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+.customization-group {
+  background: var(--color-surface);
+  border-color: var(--color-border-light) !important;
+}
+
+.option-row {
+  border-color: var(--color-border-light) !important;
+}
+
+.measurement-field {
+  background: var(--color-surface);
+  border-color: var(--color-border-light) !important;
+}
