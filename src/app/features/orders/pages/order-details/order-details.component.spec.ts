@@ -111,7 +111,9 @@ describe('OrderDetailsComponent item display', () => {
     const { itemType: _itemType, ...legacyItem } = tailoringItem();
     const fixture = render([legacyItem as OrderItem]);
 
-    expect(fixture.nativeElement.querySelector('.garment-item:not(.fabric-sale-item)')).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('.garment-item:not(.fabric-sale-item)'),
+    ).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Tailored shirt');
     expect(fixture.nativeElement.querySelector('.pricing-snapshot')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.measurements-panel')).not.toBeNull();
