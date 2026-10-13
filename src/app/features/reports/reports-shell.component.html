@@ -1,0 +1,75 @@
+<div class="container-fluid px-0">
+  <nav class="card border-0 shadow-sm mb-4" aria-label="Reports navigation">
+    <div class="card-body py-3">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="small fw-semibold text-body-secondary me-1">Navigate reports:</span>
+
+        <a
+          class="btn btn-sm btn-outline-secondary"
+          routerLink="orders"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bi bi-clipboard-data me-1" aria-hidden="true"></i>
+          <span>Orders</span>
+        </a>
+        <a
+          class="btn btn-sm btn-outline-secondary"
+          routerLink="payments"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bi bi-cash-coin me-1" aria-hidden="true"></i>
+          <span>Payments</span>
+        </a>
+        <a
+          class="btn btn-sm btn-outline-secondary"
+          routerLink="customers"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bi bi-people me-1" aria-hidden="true"></i>
+          <span>Customers</span>
+        </a>
+        <a
+          class="btn btn-sm btn-outline-secondary"
+          routerLink="appointments"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bi bi-calendar-event me-1" aria-hidden="true"></i>
+          <span>Appointments</span>
+        </a>
+        <a
+          class="btn btn-sm btn-outline-secondary"
+          routerLink="fabrics"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bi bi-scissors me-1" aria-hidden="true"></i>
+          <span>Fabrics</span>
+        </a>
+        <a
+          class="btn btn-sm btn-outline-secondary"
+          routerLink="fabric-sales"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bi bi-cart3 me-1" aria-hidden="true"></i>
+          <span>Fabric sales</span>
+        </a>
+        <a
+          class="btn btn-sm btn-outline-secondary"
+          routerLink="service-usage"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bi bi-tools me-1" aria-hidden="true"></i>
+          <span>Service usage</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <router-outlet />
+</div>

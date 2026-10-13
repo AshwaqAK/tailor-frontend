@@ -1,0 +1,210 @@
+<div class="container-fluid px-0">
+  <header class="mb-4">
+    <p class="text-uppercase text-primary fw-semibold small mb-1">Reports</p>
+    <h1 class="h2 mb-1">Payments report</h1>
+    <p class="text-body-secondary mb-0">
+      Review payment collections and refunds by their recorded transaction dates.
+    </p>
+  </header>
+
+  <form
+    class="card border-0 shadow-sm mb-4"
+    [formGroup]="paymentFilterForm"
+    (ngSubmit)="applyFilters()"
+    [attr.aria-busy]="loading()"
+    novalidate
+  >
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label" for="payments-report-from-date">From date</label>
+          <input
+            id="payments-report-from-date"
+            class="form-control"
+            [class.is-invalid]="
+              paymentFilterForm.controls.fromDate.touched &&
+              paymentFilterForm.controls.fromDate.invalid
+            "
+            type="date"
+            formControlName="fromDate"
+          />
+          @if (
+            paymentFilterForm.controls.fromDate.touched &&
+            paymentFilterForm.controls.fromDate.hasError('invalidDate')
+          ) {
+            <div class="invalid-feedback">Enter a valid date.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label" for="payments-report-to-date">To date</label>
+          <input
+            id="payments-report-to-date"
+            class="form-control"
+            [class.is-invalid]="
+              (paymentFilterForm.controls.toDate.touched &&
+                paymentFilterForm.controls.toDate.invalid) ||
+              paymentFilterForm.hasError('dateRange')
+            "
+            type="date"
+            formControlName="toDate"
+          />
+          @if (
+            paymentFilterForm.controls.toDate.touched &&
+            paymentFilterForm.controls.toDate.hasError('invalidDate')
+          ) {
+            <div class="invalid-feedback">Enter a valid date.</div>
+          } @else if (paymentFilterForm.hasError('dateRange')) {
+            <div class="invalid-feedback">To date must be on or after the from date.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label" for="payments-report-customer-id">Customer ID (optional)</label>
+          <input
+            id="payments-report-customer-id"
+            class="form-control"
+            [class.is-invalid]="
+              paymentFilterForm.controls.customerId.touched &&
+              paymentFilterForm.controls.customerId.invalid
+            "
+            type="text"
+            formControlName="customerId"
+            placeholder="CUS-000001"
+            autocomplete="off"
+          />
+          @if (
+            paymentFilterForm.controls.customerId.touched &&
+            paymentFilterForm.controls.customerId.hasError('invalidCustomerId')
+          ) {
+            <div class="invalid-feedback">Use a customer ID such as CUS-000001.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-2">
+          <label class="form-label" for="payments-report-method">Payment method</label>
+          <select id="payments-report-method" class="form-select" formControlName="paymentMethod">
+            <option value="">All methods</option>
+            @for (method of paymentMethods; track method) {
+              <option [value]="method">{{ label(method) }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="col-12 col-xl-1 d-grid">
+          <button class="btn btn-primary" type="submit" [disabled]="loading()">
+            <i class="bi bi-funnel fs-6 me-1" aria-hidden="true"></i>
+            <span>{{ loading() ? 'Loading…' : 'Apply' }}</span>
+          </button>
+        </div>
+      </div>
+      <p class="small text-body-secondary mb-0 mt-3">
+        Collections use payment dates and refunds use refund dates. Net collections are provided by
+        the backend.
+      </p>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading payments report…</p>
+      </div>
+    </div>
+  } @else if (error(); as message) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
+      </button>
+    </div>
+  } @else if (!report()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h2 class="h5">No payments report available</h2>
+        <p class="text-body-secondary mb-3">The report is not available yet. Please try again.</p>
+        <button class="btn btn-outline-primary" type="button" (click)="retry()">
+          <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+          <span>Try again</span>
+        </button>
+      </div>
+    </div>
+  } @else if (report(); as currentReport) {
+    @if (!hasPaymentActivity()) {
+      <div class="alert alert-info" role="status">No payments matched the selected filters.</div>
+    }
+
+    <section aria-labelledby="payments-summary-heading" class="mb-4">
+      <h2 id="payments-summary-heading" class="visually-hidden">Payment summary</h2>
+      <div class="row row-cols-1 row-cols-sm-3 g-3">
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Gross collections</p>
+              <p class="h4 mb-0">{{ currentReport.grossCollections | currency: 'INR' }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Refund amount</p>
+              <p class="h4 mb-0">{{ currentReport.refunds | currency: 'INR' }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Net collections</p>
+              <p class="h4 mb-0">{{ currentReport.netCollections | currency: 'INR' }}</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <div class="row g-4">
+      <div class="col-12 col-xl-6">
+        <section class="card border-0 shadow-sm h-100" aria-labelledby="payments-status-heading">
+          <div class="card-body">
+            <h2 id="payments-status-heading" class="h5 mb-3">Payments by status</h2>
+            <div class="row row-cols-2 row-cols-md-4 g-3">
+              @for (status of paymentStatuses; track status) {
+                <div class="col">
+                  <div class="border rounded p-3 h-100">
+                    <p class="text-body-secondary small mb-1">{{ label(status) }}</p>
+                    <p class="h5 mb-0">{{ statusCount(status) }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-12 col-xl-6">
+        <section class="card border-0 shadow-sm h-100" aria-labelledby="payments-method-heading">
+          <div class="card-body">
+            <h2 id="payments-method-heading" class="h5 mb-3">Payments by method</h2>
+            <div class="row row-cols-2 row-cols-md-3 g-3">
+              @for (method of paymentMethods; track method) {
+                <div class="col">
+                  <div class="border rounded p-3 h-100">
+                    <p class="text-body-secondary small mb-1">{{ label(method) }}</p>
+                    <p class="h5 mb-0">{{ methodCount(method) }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  }
+</div>

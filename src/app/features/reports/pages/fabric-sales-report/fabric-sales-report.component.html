@@ -1,0 +1,297 @@
+<div class="container-fluid px-0">
+  <header class="mb-4">
+    <p class="text-uppercase text-primary fw-semibold small mb-1">Reports</p>
+    <h1 class="h2 mb-1">Fabric sales report</h1>
+    <p class="text-body-secondary mb-0">
+      Review fabric-only sales from the saved order item snapshots.
+    </p>
+  </header>
+
+  <form
+    class="card border-0 shadow-sm mb-4"
+    [formGroup]="filterForm"
+    (ngSubmit)="applyFilters()"
+    [attr.aria-busy]="loading()"
+    novalidate
+  >
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label" for="fabric-sales-report-from-date">From date</label>
+          <input
+            id="fabric-sales-report-from-date"
+            class="form-control"
+            [class.is-invalid]="
+              filterForm.controls.fromDate.touched && filterForm.controls.fromDate.invalid
+            "
+            type="date"
+            formControlName="fromDate"
+          />
+          @if (
+            filterForm.controls.fromDate.touched &&
+            filterForm.controls.fromDate.hasError('invalidDate')
+          ) {
+            <div class="invalid-feedback">Enter a valid date.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label" for="fabric-sales-report-to-date">To date</label>
+          <input
+            id="fabric-sales-report-to-date"
+            class="form-control"
+            [class.is-invalid]="
+              (filterForm.controls.toDate.touched && filterForm.controls.toDate.invalid) ||
+              filterForm.hasError('dateRange')
+            "
+            type="date"
+            formControlName="toDate"
+          />
+          @if (
+            filterForm.controls.toDate.touched && filterForm.controls.toDate.hasError('invalidDate')
+          ) {
+            <div class="invalid-feedback">Enter a valid date.</div>
+          } @else if (filterForm.hasError('dateRange')) {
+            <div class="invalid-feedback">To date must be on or after the from date.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-8 col-xl-4">
+          <label class="form-label" for="fabric-sales-report-fabric-id">Fabric ID (optional)</label>
+          <input
+            id="fabric-sales-report-fabric-id"
+            class="form-control"
+            [class.is-invalid]="
+              filterForm.controls.fabricId.touched && filterForm.controls.fabricId.invalid
+            "
+            type="text"
+            formControlName="fabricId"
+            placeholder="FAB-000001"
+            autocomplete="off"
+          />
+          @if (
+            filterForm.controls.fabricId.touched &&
+            filterForm.controls.fabricId.hasError('invalidFabricId')
+          ) {
+            <div class="invalid-feedback">Use a fabric ID such as FAB-000001.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-4 col-xl-2 d-grid">
+          <button class="btn btn-primary" type="submit" [disabled]="loading()">
+            <i class="bi bi-funnel fs-6 me-1" aria-hidden="true"></i>
+            <span>{{ loading() ? 'Loading…' : 'Apply' }}</span>
+          </button>
+        </div>
+      </div>
+      <p class="small text-body-secondary mb-0 mt-3">
+        Sales are filtered by the parent order creation date. Only explicit FABRIC_SALE items are
+        included; legacy items without an item type remain tailoring items.
+      </p>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading fabric sales report…</p>
+      </div>
+    </div>
+  } @else if (error(); as message) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
+      </button>
+    </div>
+  } @else if (!report()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h2 class="h5">No fabric sales report available</h2>
+        <p class="text-body-secondary mb-3">The report is not available yet. Please try again.</p>
+        <button class="btn btn-outline-primary" type="button" (click)="retry()">
+          <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+          <span>Try again</span>
+        </button>
+      </div>
+    </div>
+  } @else if (report(); as currentReport) {
+    @if (!hasSales()) {
+      <div class="alert alert-info" role="status">
+        No fabric-only sales matched the selected filters.
+      </div>
+    }
+
+    <section aria-labelledby="fabric-sales-summary-heading" class="mb-4">
+      <h2 id="fabric-sales-summary-heading" class="visually-hidden">Fabric sales summary</h2>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3">
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-start justify-content-between gap-3">
+              <div>
+                <p class="text-body-secondary small mb-2">Fabric-sale lines</p>
+                <p class="h4 mb-0">{{ currentReport.saleCount ?? 0 }}</p>
+              </div>
+              <i class="bi bi-receipt fs-4 text-primary opacity-75" aria-hidden="true"></i>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-start justify-content-between gap-3">
+              <div>
+                <p class="text-body-secondary small mb-2">Distinct fabrics sold</p>
+                <p class="h4 mb-0">{{ currentReport.distinctFabricCount ?? 0 }}</p>
+              </div>
+              <i class="bi bi-box-seam fs-4 text-primary opacity-75" aria-hidden="true"></i>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-start justify-content-between gap-3">
+              <div>
+                <p class="text-body-secondary small mb-2">Total sales amount</p>
+                <p class="h4 mb-0">{{ currentReport.salesAmount ?? 0 | currency: 'INR' }}</p>
+              </div>
+              <i class="bi bi-cash-coin fs-4 text-primary opacity-75" aria-hidden="true"></i>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="card border-0 shadow-sm mb-4" aria-labelledby="fabric-sales-quantity-heading">
+      <div class="card-body">
+        <h2 id="fabric-sales-quantity-heading" class="h5 mb-1">Quantity sold by unit</h2>
+        <p class="text-body-secondary small mb-3">
+          Meter and piece quantities are reported separately.
+        </p>
+        <div class="row row-cols-1 row-cols-sm-2 g-3">
+          @for (unit of quantityUnits; track unit) {
+            <div class="col">
+              <div class="border rounded p-3 h-100">
+                <p class="text-body-secondary small mb-1">{{ unitLabel(unit) }} ({{ unit }})</p>
+                <p class="h3 mb-0">{{ quantity(unit) }}</p>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="card border-0 shadow-sm overflow-hidden"
+      aria-labelledby="fabric-sales-breakdown-heading"
+    >
+      <div class="card-body border-bottom">
+        <div class="d-flex flex-column flex-sm-row justify-content-between gap-2">
+          <div>
+            <h2 id="fabric-sales-breakdown-heading" class="h5 mb-1">Sales by fabric</h2>
+            <p class="text-body-secondary small mb-0">
+              Historical values come from saved fabric-sale snapshots.
+            </p>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary" for="fabric-sales-report-page-size"
+              >Per page</label
+            >
+            <select
+              id="fabric-sales-report-page-size"
+              class="form-select form-select-sm"
+              [value]="pageSize()"
+              [disabled]="loading()"
+              (change)="changePageSize($any($event.target).value)"
+            >
+              @for (size of pageSizes; track size) {
+                <option [value]="size">{{ size }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+
+      @if (currentReport.fabricBreakdown.data.length === 0) {
+        <div class="p-4 text-center">
+          <h3 class="h6">No fabric breakdown rows found</h3>
+          <p class="text-body-secondary mb-0">Try changing the date range or fabric filter.</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <caption class="visually-hidden">
+              Fabric sales breakdown
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Fabric</th>
+                <th scope="col">Unit</th>
+                <th scope="col">Quantity sold</th>
+                <th scope="col">Sales amount</th>
+                <th scope="col">Sale lines</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of currentReport.fabricBreakdown.data; track row.fabricId) {
+                <tr>
+                  <th scope="row">
+                    <span class="d-block">{{ fabricName(row.name) }}</span>
+                    <span class="small text-body-secondary">{{ row.fabricId }}</span>
+                    @if (row.type || row.color) {
+                      <span class="d-block small text-body-secondary">
+                        {{ row.type || 'Unknown type' }}{{ row.color ? ' · ' + row.color : '' }}
+                      </span>
+                    }
+                  </th>
+                  <td>{{ unitLabel(row.unit) }}</td>
+                  <td>{{ row.totalQuantitySold ?? 0 }}</td>
+                  <td>{{ row.totalSalesAmount ?? 0 | currency: 'INR' }}</td>
+                  <td>{{ row.saleLineCount ?? 0 }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (currentReport.fabricBreakdown.meta.totalPages > 0) {
+        <footer
+          class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 border-top p-3"
+        >
+          <span class="small text-body-secondary">
+            Showing page {{ currentReport.fabricBreakdown.meta.page }} of
+            {{ currentReport.fabricBreakdown.meta.totalPages }}
+            ({{ currentReport.fabricBreakdown.meta.total }} fabrics)
+          </span>
+          <div class="btn-group" role="group" aria-label="Fabric sales report pages">
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              [disabled]="loading() || currentReport.fabricBreakdown.meta.page <= 1"
+              (click)="changePage(currentReport.fabricBreakdown.meta.page - 1)"
+            >
+              Previous
+            </button>
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              [disabled]="
+                loading() ||
+                currentReport.fabricBreakdown.meta.page >=
+                  currentReport.fabricBreakdown.meta.totalPages
+              "
+              (click)="changePage(currentReport.fabricBreakdown.meta.page + 1)"
+            >
+              Next
+            </button>
+          </div>
+        </footer>
+      }
+    </section>
+  }
+</div>

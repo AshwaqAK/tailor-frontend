@@ -1,0 +1,119 @@
+<div class="container-fluid px-0">
+  <header class="mb-4">
+    <p class="text-uppercase text-primary fw-semibold small mb-1">Reports</p>
+    <h1 class="h2 mb-1">Fabrics report</h1>
+    <p class="text-body-secondary mb-0">
+      Review the current fabric catalog and available shop stock by unit.
+    </p>
+  </header>
+
+  <div class="alert alert-info d-flex gap-2 align-items-start" role="note">
+    <i class="bi bi-info-circle fs-5" aria-hidden="true"></i>
+    <span>
+      This summary uses all fabric records. It represents current catalog stock, not historical
+      inventory movements or stock on hand for a past date.
+    </span>
+  </div>
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading fabrics report…</p>
+      </div>
+    </div>
+  } @else if (error(); as message) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
+      </button>
+    </div>
+  } @else if (!report()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h2 class="h5">No fabrics report available</h2>
+        <p class="text-body-secondary mb-3">The report is not available yet. Please try again.</p>
+        <button class="btn btn-outline-primary" type="button" (click)="retry()">
+          <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+          <span>Try again</span>
+        </button>
+      </div>
+    </div>
+  } @else if (report(); as currentReport) {
+    @if (!hasInventory()) {
+      <div class="alert alert-info" role="status">No fabric records are available.</div>
+    }
+
+    <section aria-labelledby="fabrics-summary-heading" class="mb-4">
+      <h2 id="fabrics-summary-heading" class="visually-hidden">Fabric summary</h2>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3">
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-start justify-content-between gap-3">
+              <div>
+                <p class="text-body-secondary small mb-2">Active fabrics</p>
+                <p class="h4 mb-0">{{ currentReport.activeFabrics ?? 0 }}</p>
+              </div>
+              <i class="bi bi-scissors fs-4 text-primary opacity-75" aria-hidden="true"></i>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-start justify-content-between gap-3">
+              <div>
+                <p class="text-body-secondary small mb-2">Inactive fabrics</p>
+                <p class="h4 mb-0">{{ currentReport.inactiveFabrics ?? 0 }}</p>
+              </div>
+              <i class="bi bi-archive fs-4 text-secondary opacity-75" aria-hidden="true"></i>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-start justify-content-between gap-3">
+              <div>
+                <p class="text-body-secondary small mb-2">Low-stock fabrics</p>
+                <p class="h4 mb-0">{{ currentReport.lowStockFabrics.count ?? 0 }}</p>
+                <p class="small text-body-secondary mb-0">
+                  Threshold: {{ currentReport.lowStockFabrics.threshold ?? 0 }} units
+                </p>
+              </div>
+              <i
+                class="bi bi-exclamation-triangle fs-4 text-warning opacity-75"
+                aria-hidden="true"
+              ></i>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="card border-0 shadow-sm" aria-labelledby="fabrics-quantity-heading">
+      <div class="card-body">
+        <h2 id="fabrics-quantity-heading" class="h5 mb-1">Available shop quantity</h2>
+        <p class="text-body-secondary small mb-3">
+          Active fabric stock is shown separately for each configured quantity unit.
+        </p>
+        <div class="row row-cols-1 row-cols-sm-2 g-3">
+          @for (unit of quantityUnits; track unit) {
+            <div class="col">
+              <div class="border rounded p-3 h-100 d-flex align-items-center gap-3">
+                <i class="bi bi-box-seam fs-3 text-primary opacity-75" aria-hidden="true"></i>
+                <div>
+                  <p class="text-body-secondary small mb-1">{{ unitLabel(unit) }} ({{ unit }})</p>
+                  <p class="h3 mb-0">{{ quantity(unit) }}</p>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+</div>
