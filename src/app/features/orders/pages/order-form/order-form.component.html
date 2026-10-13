@@ -7,7 +7,7 @@
   </nav>
   <header class="mb-4">
     <h1 class="h2">Create order</h1>
-    <p class="text-body-secondary">Add garment items and lock each one to a measurement version.</p>
+    <p class="text-body-secondary">Add tailoring or fabric-sale items to this order.</p>
   </header>
   @if (error(); as message) {
     <div class="alert alert-danger" role="alert">{{ message }}</div>
@@ -84,16 +84,16 @@
     </section>
     <section class="mb-4" formArrayName="items">
       <div class="d-flex justify-content-between mb-3">
-        <h2 class="h4">Garments</h2>
-        <button class="btn btn-outline-primary" type="button" (click)="addItem()">
-          Add garment
-        </button>
+        <h2 class="h4">Order items</h2>
+        <button class="btn btn-outline-primary" type="button" (click)="addItem()">Add item</button>
       </div>
       @for (item of items.controls; track item; let index = $index) {
         <article class="card border-0 shadow-sm mb-3" [formGroupName]="index">
           <div class="card-body p-3 p-md-4">
             <div class="d-flex justify-content-between">
-              <h3 class="h5">Garment {{ index + 1 }}</h3>
+              <h3 class="h5">
+                {{ isFabricSale(item) ? 'Fabric sale' : 'Tailoring' }} {{ index + 1 }}
+              </h3>
               <button
                 class="btn btn-sm btn-outline-danger"
                 type="button"
@@ -104,324 +104,430 @@
               </button>
             </div>
             <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label" [for]="'type-' + index">Garment type *</label
-                ><select
-                  class="form-select"
-                  [id]="'type-' + index"
-                  formControlName="garmentTypeId"
-                  [disabled]="loadingGarmentTypes() || !garmentTypes().length"
-                >
-                  <option [ngValue]="null">Select garment</option>
-                  @for (garmentType of garmentTypes(); track garmentType.garmentTypeId) {
-                    <option [ngValue]="garmentType.garmentTypeId">
-                      {{ garmentLabel(garmentType) }}
-                    </option>
-                  }
+              <div class="col-12 col-md-4">
+                <label class="form-label" [for]="'item-type-' + index">Item type *</label>
+                <select class="form-select" [id]="'item-type-' + index" formControlName="itemType">
+                  <option [ngValue]="OrderItemType.Tailoring">Tailoring</option>
+                  <option [ngValue]="OrderItemType.FabricSale">Fabric sale</option>
                 </select>
-                @if (loadingGarmentTypes()) {
-                  <p class="form-text mb-0">Loading garment types…</p>
-                } @else if (!garmentTypes().length && !garmentTypeError()) {
-                  <p class="form-text text-danger mb-0">No garment types are configured.</p>
-                }
-                @if (garmentTypeFor(item.controls.garmentTypeId.value); as garmentType) {
-                  <p class="form-text mb-0">
-                    Base tailoring price: ₹{{ garmentType.tailoringService.basePrice.toFixed(2) }}
-                  </p>
-                }
               </div>
-              @if (garmentTypeFor(item.controls.garmentTypeId.value); as garmentType) {
-                <div class="col-12" formGroupName="customizations">
-                  <div class="border rounded p-3 bg-body-tertiary">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                      <div>
-                        <h4 class="h6 mb-1">Customizations</h4>
-                        <p class="small text-body-secondary mb-0">
-                          Select configured options; charges are calculated by the server.
-                        </p>
+              @if (!isFabricSale(item)) {
+                <div class="col-md-4">
+                  <label class="form-label" [for]="'type-' + index">Garment type *</label
+                  ><select
+                    class="form-select"
+                    [id]="'type-' + index"
+                    formControlName="garmentTypeId"
+                    [disabled]="loadingGarmentTypes() || !garmentTypes().length"
+                  >
+                    <option [ngValue]="null">Select garment</option>
+                    @for (garmentType of garmentTypes(); track garmentType.garmentTypeId) {
+                      <option [ngValue]="garmentType.garmentTypeId">
+                        {{ garmentLabel(garmentType) }}
+                      </option>
+                    }
+                  </select>
+                  @if (loadingGarmentTypes()) {
+                    <p class="form-text mb-0">Loading garment types…</p>
+                  } @else if (!garmentTypes().length && !garmentTypeError()) {
+                    <p class="form-text text-danger mb-0">No garment types are configured.</p>
+                  }
+                  @if (garmentTypeFor(item.controls.garmentTypeId.value); as garmentType) {
+                    <p class="form-text mb-0">
+                      Base tailoring price: ₹{{ garmentType.tailoringService.basePrice.toFixed(2) }}
+                    </p>
+                  }
+                </div>
+                @if (garmentTypeFor(item.controls.garmentTypeId.value); as garmentType) {
+                  <div class="col-12" formGroupName="customizations">
+                    <div class="border rounded p-3 bg-body-tertiary">
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                          <h4 class="h6 mb-1">Customizations</h4>
+                          <p class="small text-body-secondary mb-0">
+                            Select configured options; charges are calculated by the server.
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    @if (garmentType.customizationGroups.length) {
-                      <div class="row g-3">
-                        @for (group of garmentType.customizationGroups; track group.name) {
-                          <div class="col-12 col-lg-6">
-                            <fieldset class="border rounded p-3 h-100">
-                              <legend class="float-none w-auto px-2 fs-6 mb-2">
-                                {{ group.name }}
-                              </legend>
-                              @if (customizationType(group) === 'SINGLE_SELECT') {
-                                <select class="form-select" [formControlName]="group.name">
-                                  <option [ngValue]="null">No selection</option>
+                      @if (garmentType.customizationGroups.length) {
+                        <div class="row g-3">
+                          @for (group of garmentType.customizationGroups; track group.name) {
+                            <div class="col-12 col-lg-6">
+                              <fieldset class="border rounded p-3 h-100">
+                                <legend class="float-none w-auto px-2 fs-6 mb-2">
+                                  {{ group.name }}
+                                </legend>
+                                @if (customizationType(group) === 'SINGLE_SELECT') {
+                                  <select class="form-select" [formControlName]="group.name">
+                                    <option [ngValue]="null">No selection</option>
+                                    @for (option of group.options; track option.name) {
+                                      <option [ngValue]="option.name">
+                                        {{ option.name }} · ₹{{ option.price.toFixed(2) }}
+                                        {{ option.pricingType === 'PER_UNIT' ? '/ unit' : '' }}
+                                      </option>
+                                    }
+                                  </select>
+                                } @else if (customizationType(group) === 'MULTI_SELECT') {
                                   @for (option of group.options; track option.name) {
-                                    <option [ngValue]="option.name">
-                                      {{ option.name }} · ₹{{ option.price.toFixed(2) }}
-                                      {{ option.pricingType === 'PER_UNIT' ? '/ unit' : '' }}
-                                    </option>
+                                    <div class="form-check">
+                                      <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        [id]="
+                                          'customization-' +
+                                          index +
+                                          '-' +
+                                          group.name +
+                                          '-' +
+                                          option.name
+                                        "
+                                        [checked]="isMultiSelected(item, group, option.name)"
+                                        (change)="
+                                          toggleMultiSelection(
+                                            item,
+                                            group,
+                                            option.name,
+                                            $any($event.target).checked
+                                          )
+                                        "
+                                      />
+                                      <label
+                                        class="form-check-label"
+                                        [for]="
+                                          'customization-' +
+                                          index +
+                                          '-' +
+                                          group.name +
+                                          '-' +
+                                          option.name
+                                        "
+                                      >
+                                        {{ option.name }} · ₹{{ option.price.toFixed(2) }}
+                                        {{ option.pricingType === 'PER_UNIT' ? '/ unit' : '' }}
+                                      </label>
+                                    </div>
                                   }
-                                </select>
-                              } @else if (customizationType(group) === 'MULTI_SELECT') {
-                                @for (option of group.options; track option.name) {
+                                } @else if (customizationType(group) === 'BOOLEAN') {
                                   <div class="form-check">
                                     <input
                                       class="form-check-input"
                                       type="checkbox"
-                                      [id]="
-                                        'customization-' +
-                                        index +
-                                        '-' +
-                                        group.name +
-                                        '-' +
-                                        option.name
-                                      "
-                                      [checked]="isMultiSelected(item, group, option.name)"
-                                      (change)="
-                                        toggleMultiSelection(
-                                          item,
-                                          group,
-                                          option.name,
-                                          $any($event.target).checked
-                                        )
-                                      "
+                                      [id]="'customization-' + index + '-' + group.name"
+                                      [formControlName]="group.name"
                                     />
                                     <label
                                       class="form-check-label"
-                                      [for]="
-                                        'customization-' +
-                                        index +
-                                        '-' +
-                                        group.name +
-                                        '-' +
-                                        option.name
-                                      "
+                                      [for]="'customization-' + index + '-' + group.name"
                                     >
-                                      {{ option.name }} · ₹{{ option.price.toFixed(2) }}
-                                      {{ option.pricingType === 'PER_UNIT' ? '/ unit' : '' }}
+                                      {{ group.options[0]?.name }}
+                                      @if (group.options[0]; as option) {
+                                        · ₹{{ option.price.toFixed(2) }}
+                                        {{ option.pricingType === 'PER_UNIT' ? '/ unit' : '' }}
+                                      }
                                     </label>
                                   </div>
-                                }
-                              } @else if (customizationType(group) === 'BOOLEAN') {
-                                <div class="form-check">
-                                  <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    [id]="'customization-' + index + '-' + group.name"
-                                    [formControlName]="group.name"
-                                  />
+                                } @else if (customizationType(group) === 'NUMBER') {
                                   <label
-                                    class="form-check-label"
+                                    class="form-label"
                                     [for]="'customization-' + index + '-' + group.name"
                                   >
                                     {{ group.options[0]?.name }}
-                                    @if (group.options[0]; as option) {
-                                      · ₹{{ option.price.toFixed(2) }}
-                                      {{ option.pricingType === 'PER_UNIT' ? '/ unit' : '' }}
-                                    }
                                   </label>
-                                </div>
-                              } @else if (customizationType(group) === 'NUMBER') {
-                                <label
-                                  class="form-label"
-                                  [for]="'customization-' + index + '-' + group.name"
-                                >
-                                  {{ group.options[0]?.name }}
-                                </label>
-                                <input
-                                  class="form-control"
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  inputmode="decimal"
-                                  [id]="'customization-' + index + '-' + group.name"
-                                  [formControlName]="group.name"
-                                />
-                                @if (group.options[0]; as option) {
-                                  <div class="form-text">
-                                    ₹{{ option.price.toFixed(2) }}
-                                    {{
-                                      option.pricingType === 'PER_UNIT'
-                                        ? 'per unit'
-                                        : 'configured price'
-                                    }}
+                                  <input
+                                    class="form-control"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    inputmode="decimal"
+                                    [id]="'customization-' + index + '-' + group.name"
+                                    [formControlName]="group.name"
+                                  />
+                                  @if (group.options[0]; as option) {
+                                    <div class="form-text">
+                                      ₹{{ option.price.toFixed(2) }}
+                                      {{
+                                        option.pricingType === 'PER_UNIT'
+                                          ? 'per unit'
+                                          : 'configured price'
+                                      }}
+                                    </div>
+                                  }
+                                } @else {
+                                  <label
+                                    class="form-label"
+                                    [for]="'customization-' + index + '-' + group.name"
+                                  >
+                                    {{ group.options[0]?.name }}
+                                  </label>
+                                  <input
+                                    class="form-control"
+                                    type="text"
+                                    [id]="'customization-' + index + '-' + group.name"
+                                    [formControlName]="group.name"
+                                  />
+                                  <div class="form-text">Text input has no automatic charge.</div>
+                                }
+                                @if (customizationError(item, group); as message) {
+                                  <div class="text-danger small mt-2" role="alert">
+                                    {{ message }}
                                   </div>
                                 }
-                              } @else {
-                                <label
-                                  class="form-label"
-                                  [for]="'customization-' + index + '-' + group.name"
-                                >
-                                  {{ group.options[0]?.name }}
-                                </label>
-                                <input
-                                  class="form-control"
-                                  type="text"
-                                  [id]="'customization-' + index + '-' + group.name"
-                                  [formControlName]="group.name"
-                                />
-                                <div class="form-text">Text input has no automatic charge.</div>
-                              }
-                              @if (customizationError(item, group); as message) {
-                                <div class="text-danger small mt-2" role="alert">{{ message }}</div>
-                              }
-                            </fieldset>
-                          </div>
-                        }
-                      </div>
-                    } @else {
-                      <p class="small text-body-secondary mb-0">
-                        No customizations are configured for this garment.
-                      </p>
-                    }
-                  </div>
-                </div>
-              }
-              <div class="col-6 col-md-2">
-                <label class="form-label" [for]="'quantity-' + index">Quantity *</label
-                ><input
-                  class="form-control"
-                  [id]="'quantity-' + index"
-                  type="number"
-                  min="1"
-                  step="1"
-                  inputmode="numeric"
-                  formControlName="quantity"
-                />
-              </div>
-              <div class="col-md-3">
-                <label class="form-label" [for]="'measurement-' + index"
-                  >Measurement version *</label
-                ><select
-                  class="form-select"
-                  [id]="'measurement-' + index"
-                  formControlName="measurementId"
-                >
-                  <option value="">Select measurement</option>
-                  @for (
-                    measurement of measurementsFor(item.controls.garmentTypeId.value);
-                    track measurement._id
-                  ) {
-                    <option [value]="measurement._id">
-                      Version {{ measurement.version }} ·
-                      {{ measurement.measuredAt | date: 'mediumDate' }}
-                    </option>
-                  }
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" [for]="'fabric-' + index">Fabric</label
-                ><select
-                  class="form-select"
-                  [id]="'fabric-' + index"
-                  formControlName="fabricId"
-                  [disabled]="loadingFabrics()"
-                >
-                  <option value="">No fabric selected</option>
-                  @for (fabric of fabrics(); track fabric.fabricId) {
-                    <option [value]="fabric.fabricId">{{ fabricLabel(fabric) }}</option>
-                  }
-                </select>
-                @if (loadingFabrics()) {
-                  <p class="form-text mb-0">Loading available fabrics…</p>
-                }
-                @if (item.controls.fabricId.value) {
-                  <p class="form-text mb-0">
-                    Fabric price: ₹{{ fabricUnitPrice(item).toFixed(2) }} / unit
-                  </p>
-                }
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label" [for]="'fabric-quantity-' + index">Fabric quantity</label
-                ><input
-                  class="form-control"
-                  [class.is-invalid]="
-                    item.controls.fabricQuantity.invalid && item.controls.fabricQuantity.touched
-                  "
-                  [id]="'fabric-quantity-' + index"
-                  type="number"
-                  min="0.001"
-                  step="0.001"
-                  inputmode="decimal"
-                  formControlName="fabricQuantity"
-                  [disabled]="!item.controls.fabricId.value"
-                />
-                @if (item.controls.fabricQuantity.invalid && item.controls.fabricQuantity.touched) {
-                  <div class="invalid-feedback">
-                    Enter a positive quantity with up to three decimal places.
-                  </div>
-                }
-              </div>
-              <div class="col-12">
-                <div class="bg-body-tertiary border rounded p-3 small">
-                  <h4 class="h6 mb-3">Garment Price Summary</h4>
-                  @if (pricingPreviewIsLoading(item)) {
-                    <div class="text-body-secondary" role="status">
-                      Loading tailoring price preview…
-                    </div>
-                  } @else if (pricingPreviewErrorFor(item); as message) {
-                    <div class="text-warning-emphasis" role="alert">{{ message }}</div>
-                  } @else if (pricingPreviewFor(item); as preview) {
-                    <div class="d-grid gap-1">
-                      <div class="d-flex justify-content-between gap-3">
-                        <span>Base tailoring price per garment</span>
-                        <strong>{{ preview.baseTailoringPrice | currency: 'INR' }}</strong>
-                      </div>
-                      <div class="d-flex justify-content-between gap-3">
-                        <span>Customization charges per garment</span>
-                        <strong>{{
-                          preview.calculatedCustomizationCharge | currency: 'INR'
-                        }}</strong>
-                      </div>
-                      @if (preview.customizationGroups.length) {
-                        <div class="border-top pt-1 mt-1">
-                          <span class="text-body-secondary d-block">Selected customizations</span>
-                          @for (group of preview.customizationGroups; track group.groupName) {
-                            <div class="d-flex justify-content-between gap-3">
-                              <span>{{ group.groupName }}</span>
-                              <span>{{ group.calculatedCharge | currency: 'INR' }}</span>
+                              </fieldset>
                             </div>
                           }
                         </div>
+                      } @else {
+                        <p class="small text-body-secondary mb-0">
+                          No customizations are configured for this garment.
+                        </p>
                       }
-                      <div class="d-flex justify-content-between gap-3">
-                        <span>Tailoring price per garment</span>
-                        <strong>{{
-                          preview.calculatedPerGarmentTailoringAmount | currency: 'INR'
-                        }}</strong>
-                      </div>
-                      <div class="d-flex justify-content-between gap-3">
-                        <span>Quantity</span>
-                        <strong>{{ preview.quantity }}</strong>
-                      </div>
-                      <div class="d-flex justify-content-between gap-3">
-                        <span>Total tailoring price</span>
-                        <strong>{{ preview.finalTailoringTotal | currency: 'INR' }}</strong>
-                      </div>
-                      <div class="d-flex justify-content-between gap-3">
-                        <span>Fabric cost for entire line</span>
-                        <strong>{{ fabricCost(item) | currency: 'INR' }}</strong>
-                      </div>
-                      <div class="d-flex justify-content-between gap-3 border-top pt-2 mt-1">
-                        <span class="fw-semibold">Final garment total</span>
-                        <strong>{{
-                          preview.finalTailoringTotal + fabricCost(item) | currency: 'INR'
-                        }}</strong>
-                      </div>
                     </div>
-                  } @else {
-                    <div class="text-body-secondary">
-                      Enter valid garment, quantity, and customization selections to see pricing.
+                  </div>
+                }
+                <div class="col-6 col-md-2">
+                  <label class="form-label" [for]="'quantity-' + index">Quantity *</label
+                  ><input
+                    class="form-control"
+                    [id]="'quantity-' + index"
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    formControlName="quantity"
+                  />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" [for]="'measurement-' + index"
+                    >Measurement version *</label
+                  ><select
+                    class="form-select"
+                    [id]="'measurement-' + index"
+                    formControlName="measurementId"
+                  >
+                    <option value="">Select measurement</option>
+                    @for (
+                      measurement of measurementsFor(item.controls.garmentTypeId.value);
+                      track measurement._id
+                    ) {
+                      <option [value]="measurement._id">
+                        Version {{ measurement.version }} ·
+                        {{ measurement.measuredAt | date: 'mediumDate' }}
+                      </option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" [for]="'fabric-' + index">Fabric</label
+                  ><select
+                    class="form-select"
+                    [id]="'fabric-' + index"
+                    formControlName="fabricId"
+                    [disabled]="loadingFabrics()"
+                  >
+                    <option value="">No fabric selected</option>
+                    @for (fabric of fabrics(); track fabric.fabricId) {
+                      <option [value]="fabric.fabricId">{{ fabricLabel(fabric) }}</option>
+                    }
+                  </select>
+                  @if (loadingFabrics()) {
+                    <p class="form-text mb-0">Loading available fabrics…</p>
+                  }
+                  @if (item.controls.fabricId.value) {
+                    <p class="form-text mb-0">
+                      Fabric price: ₹{{ fabricUnitPrice(item).toFixed(2) }} / unit
+                    </p>
+                  }
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label" [for]="'fabric-quantity-' + index"
+                    >Fabric quantity</label
+                  ><input
+                    class="form-control"
+                    [class.is-invalid]="
+                      item.controls.fabricQuantity.invalid && item.controls.fabricQuantity.touched
+                    "
+                    [id]="'fabric-quantity-' + index"
+                    type="number"
+                    min="0.001"
+                    step="0.001"
+                    inputmode="decimal"
+                    formControlName="fabricQuantity"
+                    [disabled]="!item.controls.fabricId.value"
+                  />
+                  @if (
+                    item.controls.fabricQuantity.invalid && item.controls.fabricQuantity.touched
+                  ) {
+                    <div class="invalid-feedback">
+                      Enter a positive quantity with up to three decimal places.
                     </div>
                   }
                 </div>
-              </div>
-              <div class="col-12">
-                <label class="form-label" [for]="'item-notes-' + index">Garment notes</label
-                ><textarea
-                  class="form-control"
-                  [id]="'item-notes-' + index"
-                  rows="2"
-                  formControlName="notes"
-                ></textarea>
-              </div>
+                <div class="col-12">
+                  <div class="bg-body-tertiary border rounded p-3 small">
+                    <h4 class="h6 mb-3">Garment Price Summary</h4>
+                    @if (pricingPreviewIsLoading(item)) {
+                      <div class="text-body-secondary" role="status">
+                        Loading tailoring price preview…
+                      </div>
+                    } @else if (pricingPreviewErrorFor(item); as message) {
+                      <div class="text-warning-emphasis" role="alert">{{ message }}</div>
+                    } @else if (pricingPreviewFor(item); as preview) {
+                      <div class="d-grid gap-1">
+                        <div class="d-flex justify-content-between gap-3">
+                          <span>Base tailoring price per garment</span>
+                          <strong>{{ preview.baseTailoringPrice | currency: 'INR' }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between gap-3">
+                          <span>Customization charges per garment</span>
+                          <strong>{{
+                            preview.calculatedCustomizationCharge | currency: 'INR'
+                          }}</strong>
+                        </div>
+                        @if (preview.customizationGroups.length) {
+                          <div class="border-top pt-1 mt-1">
+                            <span class="text-body-secondary d-block">Selected customizations</span>
+                            @for (group of preview.customizationGroups; track group.groupName) {
+                              <div class="d-flex justify-content-between gap-3">
+                                <span>{{ group.groupName }}</span>
+                                <span>{{ group.calculatedCharge | currency: 'INR' }}</span>
+                              </div>
+                            }
+                          </div>
+                        }
+                        <div class="d-flex justify-content-between gap-3">
+                          <span>Tailoring price per garment</span>
+                          <strong>{{
+                            preview.calculatedPerGarmentTailoringAmount | currency: 'INR'
+                          }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between gap-3">
+                          <span>Quantity</span>
+                          <strong>{{ preview.quantity }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between gap-3">
+                          <span>Total tailoring price</span>
+                          <strong>{{ preview.finalTailoringTotal | currency: 'INR' }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between gap-3">
+                          <span>Fabric cost for entire line</span>
+                          <strong>{{ fabricCost(item) | currency: 'INR' }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between gap-3 border-top pt-2 mt-1">
+                          <span class="fw-semibold">Final garment total</span>
+                          <strong>{{
+                            preview.finalTailoringTotal + fabricCost(item) | currency: 'INR'
+                          }}</strong>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="text-body-secondary">
+                        Enter valid garment, quantity, and customization selections to see pricing.
+                      </div>
+                    }
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label" [for]="'item-notes-' + index">Garment notes</label
+                  ><textarea
+                    class="form-control"
+                    [id]="'item-notes-' + index"
+                    rows="2"
+                    formControlName="notes"
+                  ></textarea>
+                </div>
+              } @else {
+                <div class="col-12 col-md-6">
+                  <label class="form-label" [for]="'sale-fabric-' + index">Fabric *</label>
+                  <select
+                    class="form-select"
+                    [class.is-invalid]="
+                      item.controls.fabricId.invalid && item.controls.fabricId.touched
+                    "
+                    [id]="'sale-fabric-' + index"
+                    formControlName="fabricId"
+                    [disabled]="loadingFabrics()"
+                  >
+                    <option value="">Select fabric</option>
+                    @for (fabric of fabrics(); track fabric.fabricId) {
+                      <option [value]="fabric.fabricId">{{ fabricLabel(fabric) }}</option>
+                    }
+                  </select>
+                  @if (item.controls.fabricId.invalid && item.controls.fabricId.touched) {
+                    <div class="invalid-feedback">Select a fabric.</div>
+                  }
+                  @if (loadingFabrics()) {
+                    <p class="form-text mb-0">Loading available fabrics…</p>
+                  }
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label" [for]="'sale-quantity-' + index">
+                    Quantity sold *
+                  </label>
+                  <input
+                    class="form-control"
+                    [class.is-invalid]="
+                      item.controls.quantity.invalid && item.controls.quantity.touched
+                    "
+                    [id]="'sale-quantity-' + index"
+                    type="number"
+                    [min]="saleQuantityMin(item)"
+                    [step]="saleQuantityStep(item)"
+                    [attr.inputmode]="saleQuantityInputMode(item)"
+                    formControlName="quantity"
+                  />
+                  @if (item.controls.quantity.invalid && item.controls.quantity.touched) {
+                    <div class="invalid-feedback">
+                      @if (selectedFabric(item)?.unit === 'PIECE') {
+                        Enter a positive whole-number quantity.
+                      } @else {
+                        Enter a positive quantity with up to three decimal places.
+                      }
+                    </div>
+                  }
+                  <div class="form-text">Unit: {{ saleQuantityUnit(item) }}</div>
+                </div>
+                <div class="col-6 col-md-3">
+                  <span class="form-label d-block">Configured price</span>
+                  <div class="form-control-plaintext">
+                    @if (selectedFabric(item); as fabric) {
+                      {{ fabric.pricePerUnit | currency: 'INR' }} / {{ fabric.unit.toLowerCase() }}
+                    } @else {
+                      Select a fabric
+                    }
+                  </div>
+                </div>
+                @if (selectedFabric(item); as fabric) {
+                  <div class="col-12">
+                    <div class="bg-body-tertiary border rounded p-3 small">
+                      <div class="d-flex justify-content-between gap-3">
+                        <span>Fabric</span><strong>{{ fabric.name }} · {{ fabric.color }}</strong>
+                      </div>
+                      <div class="d-flex justify-content-between gap-3">
+                        <span>Quantity</span
+                        ><strong
+                          >{{ item.controls.quantity.value }} {{ fabric.unit.toLowerCase()
+                          }}{{ item.controls.quantity.value === 1 ? '' : 's' }}</strong
+                        >
+                      </div>
+                      @if (item.controls.quantity.valid) {
+                        <div class="d-flex justify-content-between gap-3 border-top pt-2 mt-2">
+                          <span class="fw-semibold">Estimated fabric cost</span>
+                          <strong>{{ fabricSaleCostDisplay(item) | currency: 'INR' }}</strong>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+                <div class="col-12">
+                  <label class="form-label" [for]="'item-notes-' + index">Notes</label>
+                  <textarea
+                    class="form-control"
+                    [id]="'item-notes-' + index"
+                    rows="2"
+                    formControlName="notes"
+                  ></textarea>
+                </div>
+              }
             </div>
             @if (fabricError(); as message) {
               <div

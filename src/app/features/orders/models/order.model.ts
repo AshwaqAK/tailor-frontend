@@ -13,6 +13,10 @@ export enum OrderPaymentStatus {
   PartiallyPaid = 'PARTIALLY_PAID',
   Paid = 'PAID',
 }
+export enum OrderItemType {
+  Tailoring = 'TAILORING',
+  FabricSale = 'FABRIC_SALE',
+}
 
 export interface MeasurementSnapshot {
   readonly customerId: string;
@@ -34,6 +38,16 @@ export interface FabricSnapshot {
   readonly pricePerUnit: number;
   readonly quantityUsed: number;
 }
+export interface FabricSaleSnapshot {
+  readonly fabricId: string;
+  readonly name: string;
+  readonly type: string;
+  readonly color: string;
+  readonly unit: string;
+  readonly pricePerUnit: number;
+  readonly quantitySold: number;
+  readonly lineTotal: number;
+}
 export interface ServiceSnapshot {
   readonly serviceId: string;
   readonly name: string;
@@ -44,7 +58,10 @@ export interface ServiceSnapshot {
 export interface OrderItem {
   readonly _id: string;
   readonly orderId: string;
-  readonly garmentTypeId: string;
+  /** Missing on legacy responses, which are tailoring items. */
+  readonly itemType?: OrderItemType;
+  /** Absent on FABRIC_SALE responses. */
+  readonly garmentTypeId?: string;
   readonly clothingType?: ClothingType;
   readonly quantity: number;
   readonly unitPrice: number;
@@ -53,6 +70,7 @@ export interface OrderItem {
   readonly customizations?: Readonly<Record<string, unknown>>;
   readonly measurementSnapshot?: MeasurementSnapshot;
   readonly fabricSnapshot?: FabricSnapshot;
+  readonly fabricSaleSnapshot?: FabricSaleSnapshot;
   readonly serviceSnapshot?: ServiceSnapshot;
   readonly notes?: string;
   readonly createdAt: string;
@@ -109,7 +127,8 @@ export interface CursorPaginatedOrders {
     readonly nextCursor: string | null;
   };
 }
-export interface CreateOrderItemRequest {
+export interface CreateTailoringOrderItemRequest {
+  readonly itemType?: OrderItemType.Tailoring;
   readonly garmentTypeId: string;
   readonly clothingType?: ClothingType;
   readonly quantity: number;
@@ -121,6 +140,15 @@ export interface CreateOrderItemRequest {
   readonly fabricQuantity?: number;
   readonly notes?: string;
 }
+export interface CreateFabricSaleOrderItemRequest {
+  readonly itemType: OrderItemType.FabricSale;
+  readonly fabricId: string;
+  readonly quantity: number;
+  readonly notes?: string;
+}
+export type CreateOrderItemRequest =
+  | CreateTailoringOrderItemRequest
+  | CreateFabricSaleOrderItemRequest;
 export interface CreateOrderRequest {
   readonly customerId: string;
   readonly orderDate: string;
