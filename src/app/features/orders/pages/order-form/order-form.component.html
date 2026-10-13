@@ -7,7 +7,7 @@
   </nav>
   <header class="mb-4">
     <h1 class="h2">Create order</h1>
-    <p class="text-body-secondary">Add tailoring or fabric-sale items to this order.</p>
+    <p class="text-body-secondary">Add garment items and lock each one to a measurement version.</p>
   </header>
   @if (error(); as message) {
     <div class="alert alert-danger" role="alert">{{ message }}</div>
@@ -84,15 +84,21 @@
     </section>
     <section class="mb-4" formArrayName="items">
       <div class="d-flex justify-content-between mb-3">
-        <h2 class="h4">Order items</h2>
-        <button class="btn btn-outline-primary" type="button" (click)="addItem()">Add item</button>
+        <h2 class="h4">Garments</h2>
+        <button class="btn btn-outline-primary" type="button" (click)="addItem()">
+          Add garment
+        </button>
       </div>
       @for (item of items.controls; track item; let index = $index) {
         <article class="card border-0 shadow-sm mb-3" [formGroupName]="index">
           <div class="card-body p-3 p-md-4">
             <div class="d-flex justify-content-between">
               <h3 class="h5">
-                {{ isFabricSale(item) ? 'Fabric sale' : 'Tailoring' }} {{ index + 1 }}
+                @if (isTailoring(item)) {
+                  Garment {{ index + 1 }}
+                } @else {
+                  Fabric sale {{ index + 1 }}
+                }
               </h3>
               <button
                 class="btn btn-sm btn-outline-danger"
@@ -104,14 +110,14 @@
               </button>
             </div>
             <div class="row g-3">
-              <div class="col-12 col-md-4">
-                <label class="form-label" [for]="'item-type-' + index">Item type *</label>
-                <select class="form-select" [id]="'item-type-' + index" formControlName="itemType">
-                  <option [ngValue]="OrderItemType.Tailoring">Tailoring</option>
-                  <option [ngValue]="OrderItemType.FabricSale">Fabric sale</option>
+              <div class="col-md-4">
+                <label class="form-label" [for]="'item-type-' + index">Item type *</label
+                ><select class="form-select" [id]="'item-type-' + index" formControlName="itemType">
+                  <option [ngValue]="orderItemTypes.TAILORING">Tailoring</option>
+                  <option [ngValue]="orderItemTypes.FABRIC_SALE">Fabric sale</option>
                 </select>
               </div>
-              @if (!isFabricSale(item)) {
+              @if (isTailoring(item)) {
                 <div class="col-md-4">
                   <label class="form-label" [for]="'type-' + index">Garment type *</label
                   ><select
@@ -338,30 +344,31 @@
                     </p>
                   }
                 </div>
-                <div class="col-6 col-md-3">
-                  <label class="form-label" [for]="'fabric-quantity-' + index"
-                    >Fabric quantity</label
-                  ><input
-                    class="form-control"
-                    [class.is-invalid]="
+                @if (item.controls.fabricId.value) {
+                  <div class="col-6 col-md-3">
+                    <label class="form-label" [for]="'fabric-quantity-' + index"
+                      >Fabric quantity</label
+                    ><input
+                      class="form-control"
+                      [class.is-invalid]="
+                        item.controls.fabricQuantity.invalid && item.controls.fabricQuantity.touched
+                      "
+                      [id]="'fabric-quantity-' + index"
+                      type="number"
+                      min="0.001"
+                      step="0.001"
+                      inputmode="decimal"
+                      formControlName="fabricQuantity"
+                    />
+                    @if (
                       item.controls.fabricQuantity.invalid && item.controls.fabricQuantity.touched
-                    "
-                    [id]="'fabric-quantity-' + index"
-                    type="number"
-                    min="0.001"
-                    step="0.001"
-                    inputmode="decimal"
-                    formControlName="fabricQuantity"
-                    [disabled]="!item.controls.fabricId.value"
-                  />
-                  @if (
-                    item.controls.fabricQuantity.invalid && item.controls.fabricQuantity.touched
-                  ) {
-                    <div class="invalid-feedback">
-                      Enter a positive quantity with up to three decimal places.
-                    </div>
-                  }
-                </div>
+                    ) {
+                      <div class="invalid-feedback">
+                        Enter a positive quantity with up to three decimal places.
+                      </div>
+                    }
+                  </div>
+                }
                 <div class="col-12">
                   <div class="bg-body-tertiary border rounded p-3 small">
                     <h4 class="h6 mb-3">Garment Price Summary</h4>
@@ -436,14 +443,11 @@
                   ></textarea>
                 </div>
               } @else {
-                <div class="col-12 col-md-6">
-                  <label class="form-label" [for]="'sale-fabric-' + index">Fabric *</label>
-                  <select
+                <div class="col-12 col-md-8">
+                  <label class="form-label" [for]="'fabric-' + index">Fabric *</label
+                  ><select
                     class="form-select"
-                    [class.is-invalid]="
-                      item.controls.fabricId.invalid && item.controls.fabricId.touched
-                    "
-                    [id]="'sale-fabric-' + index"
+                    [id]="'fabric-' + index"
                     formControlName="fabricId"
                     [disabled]="loadingFabrics()"
                   >
@@ -452,75 +456,77 @@
                       <option [value]="fabric.fabricId">{{ fabricLabel(fabric) }}</option>
                     }
                   </select>
-                  @if (item.controls.fabricId.invalid && item.controls.fabricId.touched) {
-                    <div class="invalid-feedback">Select a fabric.</div>
-                  }
                   @if (loadingFabrics()) {
                     <p class="form-text mb-0">Loading available fabrics…</p>
                   }
+                  @if (selectedFabric(item); as fabric) {
+                    <p class="form-text mb-0">
+                      Configured unit: {{ fabric.unit.toLowerCase() }} · Price:
+                      {{ fabric.pricePerUnit | currency: 'INR' }} / unit
+                    </p>
+                  }
                 </div>
-                <div class="col-6 col-md-3">
-                  <label class="form-label" [for]="'sale-quantity-' + index">
-                    Quantity sold *
-                  </label>
-                  <input
+                <div class="col-6 col-md-4">
+                  <label class="form-label" [for]="'quantity-' + index">Quantity sold *</label
+                  ><input
                     class="form-control"
                     [class.is-invalid]="
                       item.controls.quantity.invalid && item.controls.quantity.touched
                     "
-                    [id]="'sale-quantity-' + index"
+                    [id]="'quantity-' + index"
                     type="number"
-                    [min]="saleQuantityMin(item)"
-                    [step]="saleQuantityStep(item)"
-                    [attr.inputmode]="saleQuantityInputMode(item)"
+                    min="1"
+                    [step]="fabricSaleQuantityStep(item)"
+                    inputmode="numeric"
                     formControlName="quantity"
                   />
                   @if (item.controls.quantity.invalid && item.controls.quantity.touched) {
-                    <div class="invalid-feedback">
-                      @if (selectedFabric(item)?.unit === 'PIECE') {
-                        Enter a positive whole-number quantity.
-                      } @else {
-                        Enter a positive quantity with up to three decimal places.
-                      }
-                    </div>
+                    <div class="invalid-feedback">{{ fabricSaleQuantityMessage(item) }}</div>
                   }
-                  <div class="form-text">Unit: {{ saleQuantityUnit(item) }}</div>
                 </div>
-                <div class="col-6 col-md-3">
-                  <span class="form-label d-block">Configured price</span>
-                  <div class="form-control-plaintext">
-                    @if (selectedFabric(item); as fabric) {
-                      {{ fabric.pricePerUnit | currency: 'INR' }} / {{ fabric.unit.toLowerCase() }}
-                    } @else {
-                      Select a fabric
-                    }
-                  </div>
-                </div>
-                @if (selectedFabric(item); as fabric) {
+                @if (fabricSaleEstimate(item); as estimatedCost) {
                   <div class="col-12">
-                    <div class="bg-body-tertiary border rounded p-3 small">
-                      <div class="d-flex justify-content-between gap-3">
-                        <span>Fabric</span><strong>{{ fabric.name }} · {{ fabric.color }}</strong>
-                      </div>
-                      <div class="d-flex justify-content-between gap-3">
-                        <span>Quantity</span
-                        ><strong
-                          >{{ item.controls.quantity.value }} {{ fabric.unit.toLowerCase()
-                          }}{{ item.controls.quantity.value === 1 ? '' : 's' }}</strong
-                        >
-                      </div>
-                      @if (item.controls.quantity.valid) {
-                        <div class="d-flex justify-content-between gap-3 border-top pt-2 mt-2">
-                          <span class="fw-semibold">Estimated fabric cost</span>
-                          <strong>{{ fabricSaleCostDisplay(item) | currency: 'INR' }}</strong>
+                    <div class="fabric-sale-estimate bg-body-tertiary border rounded p-3 small">
+                      <div class="d-grid gap-1">
+                        <div class="d-flex justify-content-between gap-3">
+                          <span>Fabric</span>
+                          <strong
+                            >{{ selectedFabric(item)?.name }} ·
+                            {{ selectedFabric(item)?.color }}</strong
+                          >
                         </div>
-                      }
+                        <div class="d-flex justify-content-between gap-3">
+                          <span>Unit</span>
+                          <span>{{ selectedFabric(item)?.unit }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between gap-3">
+                          <span>Price</span>
+                          <span
+                            >{{ selectedFabric(item)?.pricePerUnit | currency: 'INR' }} /
+                            {{ selectedFabric(item)?.unit?.toLowerCase() }}</span
+                          >
+                        </div>
+                        <div class="d-flex justify-content-between gap-3">
+                          <span>Quantity</span>
+                          <span
+                            >{{ item.controls.quantity.value }}
+                            {{ selectedFabric(item)?.unit?.toLowerCase() }}</span
+                          >
+                        </div>
+                        <div class="d-flex justify-content-between gap-3 border-top pt-2 mt-1">
+                          <span class="fw-semibold">Estimated fabric cost</span>
+                          <strong>{{ estimatedCost | currency: 'INR' }}</strong>
+                        </div>
+                      </div>
+                      <div class="form-text mt-2">
+                        Estimate only; the server calculates the final line total.
+                      </div>
                     </div>
                   </div>
                 }
                 <div class="col-12">
-                  <label class="form-label" [for]="'item-notes-' + index">Notes</label>
-                  <textarea
+                  <label class="form-label" [for]="'item-notes-' + index">Fabric sale notes</label
+                  ><textarea
                     class="form-control"
                     [id]="'item-notes-' + index"
                     rows="2"
@@ -546,6 +552,7 @@
               </div>
             }
             @if (
+              isTailoring(item) &&
               item.controls.garmentTypeId.value &&
               measurementsFor(item.controls.garmentTypeId.value).length === 0 &&
               !loadingMeasurements()
@@ -569,6 +576,10 @@
         ></textarea>
         @if (total(); as orderTotal) {
           <p class="h5 text-end mt-3 mb-0">Total: {{ orderTotal | currency: 'INR' }}</p>
+        } @else if (hasFabricSaleItems()) {
+          <p class="text-body-secondary text-end mt-3 mb-0">
+            Fabric sale totals are calculated by the server when the order is submitted.
+          </p>
         } @else {
           <p class="text-body-secondary text-end mt-3 mb-0">
             Complete valid garment selections to see the order total.

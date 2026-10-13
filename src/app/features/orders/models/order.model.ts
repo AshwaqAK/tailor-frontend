@@ -1,4 +1,5 @@
 import type { ClothingType, FitPreference } from '@features/customers/models/measurement.model';
+import type { FabricType, QuantityUnit } from '@features/fabrics/models/fabric.model';
 
 export enum OrderStatus {
   Draft = 'DRAFT',
@@ -13,9 +14,10 @@ export enum OrderPaymentStatus {
   PartiallyPaid = 'PARTIALLY_PAID',
   Paid = 'PAID',
 }
+
 export enum OrderItemType {
-  Tailoring = 'TAILORING',
-  FabricSale = 'FABRIC_SALE',
+  TAILORING = 'TAILORING',
+  FABRIC_SALE = 'FABRIC_SALE',
 }
 
 export interface MeasurementSnapshot {
@@ -41,9 +43,9 @@ export interface FabricSnapshot {
 export interface FabricSaleSnapshot {
   readonly fabricId: string;
   readonly name: string;
-  readonly type: string;
+  readonly type: FabricType;
   readonly color: string;
-  readonly unit: string;
+  readonly unit: QuantityUnit;
   readonly pricePerUnit: number;
   readonly quantitySold: number;
   readonly lineTotal: number;
@@ -58,9 +60,7 @@ export interface ServiceSnapshot {
 export interface OrderItem {
   readonly _id: string;
   readonly orderId: string;
-  /** Missing on legacy responses, which are tailoring items. */
   readonly itemType?: OrderItemType;
-  /** Absent on FABRIC_SALE responses. */
   readonly garmentTypeId?: string;
   readonly clothingType?: ClothingType;
   readonly quantity: number;
@@ -128,10 +128,11 @@ export interface CursorPaginatedOrders {
   };
 }
 export interface CreateTailoringOrderItemRequest {
-  readonly itemType?: OrderItemType.Tailoring;
+  readonly itemType?: OrderItemType.TAILORING;
   readonly garmentTypeId: string;
   readonly clothingType?: ClothingType;
   readonly quantity: number;
+  /** Required by the backend DTO; the backend recalculates the authoritative price. */
   readonly unitPrice: number;
   readonly measurementId: string;
   readonly customizations?: Readonly<Record<string, unknown>>;
@@ -141,7 +142,7 @@ export interface CreateTailoringOrderItemRequest {
   readonly notes?: string;
 }
 export interface CreateFabricSaleOrderItemRequest {
-  readonly itemType: OrderItemType.FabricSale;
+  readonly itemType: OrderItemType.FABRIC_SALE;
   readonly fabricId: string;
   readonly quantity: number;
   readonly notes?: string;

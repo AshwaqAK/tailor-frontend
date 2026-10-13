@@ -21,7 +21,6 @@ import { OrdersApiService } from '../../data-access/orders-api.service';
 import {
   ORDER_STATUS_TRANSITIONS,
   OrderItemType,
-  type FabricSaleSnapshot,
   type OrderItem,
   type OrderStatus,
   type OrderWithItems,
@@ -231,15 +230,25 @@ export class OrderDetailsComponent {
     return formatMeasurement(value);
   }
   itemType(item: OrderItem): OrderItemType {
-    return item.itemType === OrderItemType.FabricSale
-      ? OrderItemType.FabricSale
-      : OrderItemType.Tailoring;
+    return item.itemType ?? OrderItemType.TAILORING;
   }
   isFabricSale(item: OrderItem): boolean {
-    return this.itemType(item) === OrderItemType.FabricSale;
+    return this.itemType(item) === OrderItemType.FABRIC_SALE;
   }
-  fabricSaleSnapshot(item: OrderItem): FabricSaleSnapshot | null {
-    return this.isFabricSale(item) ? (item.fabricSaleSnapshot ?? null) : null;
+  fabricSaleName(item: OrderItem): string {
+    return item.fabricSaleSnapshot?.name ?? 'Fabric sale';
+  }
+  fabricSaleQuantity(item: OrderItem): number {
+    return item.fabricSaleSnapshot?.quantitySold ?? item.quantity;
+  }
+  fabricSaleUnit(item: OrderItem): string | null {
+    return item.fabricSaleSnapshot?.unit ? this.label(item.fabricSaleSnapshot.unit) : null;
+  }
+  fabricSalePrice(item: OrderItem): number | null {
+    return item.fabricSaleSnapshot?.pricePerUnit ?? null;
+  }
+  fabricSaleLineTotal(item: OrderItem): number | null {
+    return item.fabricSaleSnapshot?.lineTotal ?? null;
   }
   tailoringTotal(item: OrderItem): number {
     return item.tailoringPricingSnapshot?.finalTailoringTotal ?? item.quantity * item.unitPrice;
