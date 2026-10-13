@@ -1,0 +1,316 @@
+<div class="container-fluid px-0">
+  <header class="mb-4">
+    <p class="text-uppercase text-primary fw-semibold small mb-1">Reports</p>
+    <h1 class="h2 mb-1">Customers report</h1>
+    <p class="text-body-secondary mb-0">
+      Review customer activity and the current order snapshots associated with selected orders.
+    </p>
+  </header>
+
+  <form
+    class="card border-0 shadow-sm mb-4"
+    [formGroup]="customerFilterForm"
+    (ngSubmit)="applyFilters()"
+    [attr.aria-busy]="loading()"
+    novalidate
+  >
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label" for="customers-report-from-date">From date</label>
+          <input
+            id="customers-report-from-date"
+            class="form-control"
+            [class.is-invalid]="
+              customerFilterForm.controls.fromDate.touched &&
+              customerFilterForm.controls.fromDate.invalid
+            "
+            type="date"
+            formControlName="fromDate"
+          />
+          @if (
+            customerFilterForm.controls.fromDate.touched &&
+            customerFilterForm.controls.fromDate.hasError('invalidDate')
+          ) {
+            <div class="invalid-feedback">Enter a valid date.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label" for="customers-report-to-date">To date</label>
+          <input
+            id="customers-report-to-date"
+            class="form-control"
+            [class.is-invalid]="
+              (customerFilterForm.controls.toDate.touched &&
+                customerFilterForm.controls.toDate.invalid) ||
+              customerFilterForm.hasError('dateRange')
+            "
+            type="date"
+            formControlName="toDate"
+          />
+          @if (
+            customerFilterForm.controls.toDate.touched &&
+            customerFilterForm.controls.toDate.hasError('invalidDate')
+          ) {
+            <div class="invalid-feedback">Enter a valid date.</div>
+          } @else if (customerFilterForm.hasError('dateRange')) {
+            <div class="invalid-feedback">To date must be on or after the from date.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-8 col-xl-4">
+          <label class="form-label" for="customers-report-customer-id"
+            >Customer ID (optional)</label
+          >
+          <input
+            id="customers-report-customer-id"
+            class="form-control"
+            [class.is-invalid]="
+              customerFilterForm.controls.customerId.touched &&
+              customerFilterForm.controls.customerId.invalid
+            "
+            type="text"
+            formControlName="customerId"
+            placeholder="CUS-000001"
+            autocomplete="off"
+          />
+          @if (
+            customerFilterForm.controls.customerId.touched &&
+            customerFilterForm.controls.customerId.hasError('invalidCustomerId')
+          ) {
+            <div class="invalid-feedback">Use a customer ID such as CUS-000001.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-4 col-xl-2 d-grid">
+          <button class="btn btn-primary" type="submit" [disabled]="loading()">
+            <i class="bi bi-funnel fs-6 me-1" aria-hidden="true"></i>
+            <span>{{ loading() ? 'Loading…' : 'Apply' }}</span>
+          </button>
+        </div>
+      </div>
+      <p class="small text-body-secondary mb-0 mt-3">
+        Registration metrics use customer registration dates. Order value, customer order counts,
+        and balances use order creation dates; paid and outstanding amounts are current order
+        snapshots, not payment collections.
+      </p>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading customers report…</p>
+      </div>
+    </div>
+  } @else if (error(); as message) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
+      </button>
+    </div>
+  } @else if (!report()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h2 class="h5">No customers report available</h2>
+        <p class="text-body-secondary mb-3">The report is not available yet. Please try again.</p>
+        <button class="btn btn-outline-primary" type="button" (click)="retry()">
+          <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+          <span>Try again</span>
+        </button>
+      </div>
+    </div>
+  } @else if (report(); as currentReport) {
+    <section aria-labelledby="customers-summary-heading" class="mb-4">
+      <h2 id="customers-summary-heading" class="visually-hidden">Customer report summary</h2>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Active registered customers</p>
+              <p class="h4 mb-0">{{ currentReport.activeCustomers ?? 0 }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Inactive registered customers</p>
+              <p class="h4 mb-0">{{ currentReport.inactiveCustomers ?? 0 }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Customer registrations</p>
+              <p class="h4 mb-0">{{ currentReport.registrationCount ?? 0 }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Customers with orders</p>
+              <p class="h4 mb-0">{{ currentReport.customerOrderCount ?? 0 }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Repeat customers</p>
+              <p class="h4 mb-0">{{ currentReport.repeatCustomerCount ?? 0 }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Order value</p>
+              <p class="h4 mb-0">{{ currentReport.orderValue ?? 0 | currency: 'INR' }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Current paid amount</p>
+              <p class="h4 mb-0">{{ currentReport.currentPaidAmount ?? 0 | currency: 'INR' }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Current outstanding balance</p>
+              <p class="h4 mb-0">
+                {{ currentReport.currentOutstandingBalance ?? 0 | currency: 'INR' }}
+              </p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="card border-0 shadow-sm overflow-hidden"
+      aria-labelledby="customer-breakdown-heading"
+    >
+      <div class="card-body border-bottom">
+        <div class="d-flex flex-column flex-sm-row justify-content-between gap-2">
+          <div>
+            <h2 id="customer-breakdown-heading" class="h5 mb-1">Customer order breakdown</h2>
+            <p class="text-body-secondary small mb-0">
+              Financial values are supplied by the backend for orders created in the selected
+              period.
+            </p>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary" for="customers-report-page-size"
+              >Per page</label
+            >
+            <select
+              id="customers-report-page-size"
+              class="form-select form-select-sm"
+              [value]="pageSize()"
+              [disabled]="loading()"
+              (change)="changePageSize($any($event.target).value)"
+            >
+              @for (size of pageSizes; track size) {
+                <option [value]="size">{{ size }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+
+      @if (currentReport.customerBreakdown.data.length === 0) {
+        <div class="p-4 text-center">
+          <h3 class="h6">No customer order rows found</h3>
+          <p class="text-body-secondary mb-0">Try changing the date range or customer filter.</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <caption class="visually-hidden">
+              Customer order breakdown
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Customer</th>
+                <th scope="col">Orders</th>
+                <th scope="col">Order value</th>
+                <th scope="col">Current paid</th>
+                <th scope="col">Current outstanding</th>
+                <th scope="col">Latest order</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of currentReport.customerBreakdown.data; track row.customerId) {
+                <tr>
+                  <th scope="row">
+                    <span class="d-block">{{ customerName(row.customerName) }}</span>
+                    <span class="small text-body-secondary">{{ row.customerId }}</span>
+                  </th>
+                  <td>{{ row.orderCount ?? 0 }}</td>
+                  <td>{{ row.orderValue ?? 0 | currency: 'INR' }}</td>
+                  <td>{{ row.currentPaidAmount ?? 0 | currency: 'INR' }}</td>
+                  <td>{{ row.currentOutstandingBalance ?? 0 | currency: 'INR' }}</td>
+                  <td>
+                    {{
+                      row.latestOrderCreatedAt
+                        ? (row.latestOrderCreatedAt | date: 'mediumDate')
+                        : '—'
+                    }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (currentReport.customerBreakdown.meta.totalPages > 0) {
+        <footer
+          class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 border-top p-3"
+        >
+          <span class="small text-body-secondary">
+            Showing page {{ currentReport.customerBreakdown.meta.page }} of
+            {{ currentReport.customerBreakdown.meta.totalPages }}
+            ({{ currentReport.customerBreakdown.meta.total }} customers)
+          </span>
+          <div class="btn-group" role="group" aria-label="Customer report pages">
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              [disabled]="loading() || currentReport.customerBreakdown.meta.page <= 1"
+              (click)="changePage(currentReport.customerBreakdown.meta.page - 1)"
+            >
+              Previous
+            </button>
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              [disabled]="
+                loading() ||
+                currentReport.customerBreakdown.meta.page >=
+                  currentReport.customerBreakdown.meta.totalPages
+              "
+              (click)="changePage(currentReport.customerBreakdown.meta.page + 1)"
+            >
+              Next
+            </button>
+          </div>
+        </footer>
+      }
+    </section>
+  }
+</div>

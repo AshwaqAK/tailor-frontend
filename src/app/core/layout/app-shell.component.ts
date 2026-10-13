@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '@core/auth/auth.service';
+import { Role } from '@shared/models/user.model';
 
 @Component({
   selector: 'app-shell',
@@ -16,6 +17,10 @@ export class AppShellComponent {
   private readonly router = inject(Router);
 
   readonly user = this.auth.user;
+  readonly canViewReports = computed(() => {
+    const role = this.user()?.role;
+    return role === Role.SuperAdmin || role === Role.Manager;
+  });
   readonly sidebarOpen = signal(false);
   readonly signingOut = signal(false);
 

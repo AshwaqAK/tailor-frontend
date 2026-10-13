@@ -1,0 +1,225 @@
+<div class="container-fluid px-0">
+  <header class="mb-4">
+    <p class="text-uppercase text-primary fw-semibold small mb-1">Reports</p>
+    <h1 class="h2 mb-1">Orders report</h1>
+    <p class="text-body-secondary mb-0">
+      Review order value, current balances, status totals, and order composition.
+    </p>
+  </header>
+
+  <form
+    class="card border-0 shadow-sm mb-4"
+    [formGroup]="reportDateForm"
+    (ngSubmit)="applyFilters()"
+    [attr.aria-busy]="loading()"
+    novalidate
+  >
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label" for="orders-report-from-date">From date</label>
+          <input
+            id="orders-report-from-date"
+            class="form-control"
+            [class.is-invalid]="
+              reportDateForm.controls.fromDate.touched && reportDateForm.controls.fromDate.invalid
+            "
+            type="date"
+            formControlName="fromDate"
+          />
+          @if (
+            reportDateForm.controls.fromDate.touched &&
+            reportDateForm.controls.fromDate.hasError('invalidDate')
+          ) {
+            <div class="invalid-feedback">Enter a valid date.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <label class="form-label" for="orders-report-to-date">To date</label>
+          <input
+            id="orders-report-to-date"
+            class="form-control"
+            [class.is-invalid]="
+              (reportDateForm.controls.toDate.touched && reportDateForm.controls.toDate.invalid) ||
+              reportDateForm.hasError('dateRange')
+            "
+            type="date"
+            formControlName="toDate"
+          />
+          @if (
+            reportDateForm.controls.toDate.touched &&
+            reportDateForm.controls.toDate.hasError('invalidDate')
+          ) {
+            <div class="invalid-feedback">Enter a valid date.</div>
+          } @else if (reportDateForm.hasError('dateRange')) {
+            <div class="invalid-feedback">To date must be on or after the from date.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-8 col-xl-4">
+          <label class="form-label" for="orders-report-customer-id">Customer ID (optional)</label>
+          <input
+            id="orders-report-customer-id"
+            class="form-control"
+            [class.is-invalid]="
+              reportDateForm.controls.customerId.touched &&
+              reportDateForm.controls.customerId.invalid
+            "
+            type="text"
+            formControlName="customerId"
+            placeholder="CUS-000001"
+            autocomplete="off"
+          />
+          @if (
+            reportDateForm.controls.customerId.touched &&
+            reportDateForm.controls.customerId.hasError('invalidCustomerId')
+          ) {
+            <div class="invalid-feedback">Use a customer ID such as CUS-000001.</div>
+          }
+        </div>
+
+        <div class="col-12 col-sm-4 col-xl-2 d-grid">
+          <button class="btn btn-primary" type="submit" [disabled]="loading()">
+            <i class="bi bi-funnel fs-6 me-1" aria-hidden="true"></i>
+            <span>{{ loading() ? 'Loading…' : 'Apply' }}</span>
+          </button>
+        </div>
+      </div>
+      <p class="small text-body-secondary mb-0 mt-3">
+        Paid and outstanding amounts are current order snapshots for the selected orders, not a
+        payment-transaction collection report.
+      </p>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading orders report…</p>
+      </div>
+    </div>
+  } @else if (error(); as message) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
+      </button>
+    </div>
+  } @else if (!report()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h2 class="h5">No orders report available</h2>
+        <p class="text-body-secondary mb-3">The report is not available yet. Please try again.</p>
+        <button class="btn btn-outline-primary" type="button" (click)="retry()">
+          <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+          <span>Try again</span>
+        </button>
+      </div>
+    </div>
+  } @else if (report(); as currentReport) {
+    @if (currentReport.orderCount === 0) {
+      <div class="alert alert-info" role="status">No orders matched the selected filters.</div>
+    }
+
+    <section aria-labelledby="orders-report-summary-heading" class="mb-4">
+      <h2 id="orders-report-summary-heading" class="visually-hidden">Order report summary</h2>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Order count</p>
+              <p class="h4 mb-0">{{ currentReport.orderCount }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Order value</p>
+              <p class="h4 mb-0">{{ currentReport.orderValue | currency: 'INR' }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Current paid amount</p>
+              <p class="h4 mb-0">{{ currentReport.paidAmount | currency: 'INR' }}</p>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <p class="text-body-secondary small mb-2">Current outstanding balance</p>
+              <p class="h4 mb-0">{{ currentReport.outstandingBalance | currency: 'INR' }}</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <div class="row g-4">
+      <div class="col-12 col-xl-6">
+        <section class="card border-0 shadow-sm h-100" aria-labelledby="orders-status-heading">
+          <div class="card-body">
+            <h2 id="orders-status-heading" class="h5 mb-3">Orders by status</h2>
+            <div class="row row-cols-2 row-cols-md-3 g-3">
+              @for (status of orderStatuses; track status) {
+                <div class="col">
+                  <div class="border rounded p-3 h-100">
+                    <p class="text-body-secondary small mb-1">{{ statusLabel(status) }}</p>
+                    <p class="h5 mb-0">{{ statusCount(status) }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-12 col-xl-6">
+        <section class="card border-0 shadow-sm h-100" aria-labelledby="orders-composition-heading">
+          <div class="card-body">
+            <h2 id="orders-composition-heading" class="h5 mb-3">Order composition</h2>
+            <div class="row row-cols-1 row-cols-sm-3 g-3 mb-4">
+              <div class="col">
+                <p class="text-body-secondary small mb-1">Tailoring only</p>
+                <p class="h5 mb-0">{{ currentReport.composition.tailoringOnly }}</p>
+              </div>
+              <div class="col">
+                <p class="text-body-secondary small mb-1">Fabric sale only</p>
+                <p class="h5 mb-0">{{ currentReport.composition.fabricSaleOnly }}</p>
+              </div>
+              <div class="col">
+                <p class="text-body-secondary small mb-1">Mixed orders</p>
+                <p class="h5 mb-0">{{ currentReport.composition.mixed }}</p>
+              </div>
+            </div>
+            <h3 class="h6 mb-3">Amount composition</h3>
+            <dl class="row mb-0">
+              <dt class="col-7 fw-normal text-body-secondary">Tailoring amount</dt>
+              <dd class="col-5 text-end mb-2">
+                {{ currentReport.composition.amounts.tailoringAmount | currency: 'INR' }}
+              </dd>
+              <dt class="col-7 fw-normal text-body-secondary">Attached fabric</dt>
+              <dd class="col-5 text-end mb-2">
+                {{ currentReport.composition.amounts.attachedFabricAmount | currency: 'INR' }}
+              </dd>
+              <dt class="col-7 fw-normal text-body-secondary">Fabric-only sales</dt>
+              <dd class="col-5 text-end mb-0">
+                {{ currentReport.composition.amounts.fabricSaleAmount | currency: 'INR' }}
+              </dd>
+            </dl>
+          </div>
+        </section>
+      </div>
+    </div>
+  }
+</div>
