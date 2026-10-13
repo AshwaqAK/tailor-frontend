@@ -1,4 +1,5 @@
 import type { ClothingType, FitPreference } from '@features/customers/models/measurement.model';
+import type { FabricType, QuantityUnit } from '@features/fabrics/models/fabric.model';
 
 export enum OrderStatus {
   Draft = 'DRAFT',
@@ -12,6 +13,11 @@ export enum OrderPaymentStatus {
   Unpaid = 'UNPAID',
   PartiallyPaid = 'PARTIALLY_PAID',
   Paid = 'PAID',
+}
+
+export enum OrderItemType {
+  TAILORING = 'TAILORING',
+  FABRIC_SALE = 'FABRIC_SALE',
 }
 
 export interface MeasurementSnapshot {
@@ -34,6 +40,16 @@ export interface FabricSnapshot {
   readonly pricePerUnit: number;
   readonly quantityUsed: number;
 }
+export interface FabricSaleSnapshot {
+  readonly fabricId: string;
+  readonly name: string;
+  readonly type: FabricType;
+  readonly color: string;
+  readonly unit: QuantityUnit;
+  readonly pricePerUnit: number;
+  readonly quantitySold: number;
+  readonly lineTotal: number;
+}
 export interface ServiceSnapshot {
   readonly serviceId: string;
   readonly name: string;
@@ -44,7 +60,8 @@ export interface ServiceSnapshot {
 export interface OrderItem {
   readonly _id: string;
   readonly orderId: string;
-  readonly garmentTypeId: string;
+  readonly itemType?: OrderItemType;
+  readonly garmentTypeId?: string;
   readonly clothingType?: ClothingType;
   readonly quantity: number;
   readonly unitPrice: number;
@@ -53,6 +70,7 @@ export interface OrderItem {
   readonly customizations?: Readonly<Record<string, unknown>>;
   readonly measurementSnapshot?: MeasurementSnapshot;
   readonly fabricSnapshot?: FabricSnapshot;
+  readonly fabricSaleSnapshot?: FabricSaleSnapshot;
   readonly serviceSnapshot?: ServiceSnapshot;
   readonly notes?: string;
   readonly createdAt: string;
@@ -109,10 +127,12 @@ export interface CursorPaginatedOrders {
     readonly nextCursor: string | null;
   };
 }
-export interface CreateOrderItemRequest {
+export interface CreateTailoringOrderItemRequest {
+  readonly itemType?: OrderItemType.TAILORING;
   readonly garmentTypeId: string;
   readonly clothingType?: ClothingType;
   readonly quantity: number;
+  /** Required by the backend DTO; the backend recalculates the authoritative price. */
   readonly unitPrice: number;
   readonly measurementId: string;
   readonly customizations?: Readonly<Record<string, unknown>>;
@@ -121,6 +141,15 @@ export interface CreateOrderItemRequest {
   readonly fabricQuantity?: number;
   readonly notes?: string;
 }
+export interface CreateFabricSaleOrderItemRequest {
+  readonly itemType: OrderItemType.FABRIC_SALE;
+  readonly fabricId: string;
+  readonly quantity: number;
+  readonly notes?: string;
+}
+export type CreateOrderItemRequest =
+  | CreateTailoringOrderItemRequest
+  | CreateFabricSaleOrderItemRequest;
 export interface CreateOrderRequest {
   readonly customerId: string;
   readonly orderDate: string;

@@ -20,6 +20,7 @@ import { PaymentMethod, type Payment } from '@features/payments/models/payment.m
 import { OrdersApiService } from '../../data-access/orders-api.service';
 import {
   ORDER_STATUS_TRANSITIONS,
+  OrderItemType,
   type OrderItem,
   type OrderStatus,
   type OrderWithItems,
@@ -227,6 +228,27 @@ export class OrderDetailsComponent {
   }
   formatValue(value: number): string {
     return formatMeasurement(value);
+  }
+  itemType(item: OrderItem): OrderItemType {
+    return item.itemType ?? OrderItemType.TAILORING;
+  }
+  isFabricSale(item: OrderItem): boolean {
+    return this.itemType(item) === OrderItemType.FABRIC_SALE;
+  }
+  fabricSaleName(item: OrderItem): string {
+    return item.fabricSaleSnapshot?.name ?? 'Fabric sale';
+  }
+  fabricSaleQuantity(item: OrderItem): number {
+    return item.fabricSaleSnapshot?.quantitySold ?? item.quantity;
+  }
+  fabricSaleUnit(item: OrderItem): string | null {
+    return item.fabricSaleSnapshot?.unit ? this.label(item.fabricSaleSnapshot.unit) : null;
+  }
+  fabricSalePrice(item: OrderItem): number {
+    return item.fabricSaleSnapshot?.pricePerUnit ?? item.unitPrice;
+  }
+  fabricSaleLineTotal(item: OrderItem): number | null {
+    return item.fabricSaleSnapshot?.lineTotal ?? null;
   }
   tailoringTotal(item: OrderItem): number {
     return item.tailoringPricingSnapshot?.finalTailoringTotal ?? item.quantity * item.unitPrice;

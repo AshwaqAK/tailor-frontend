@@ -334,9 +334,81 @@
     </section>
 
     <section aria-labelledby="garments-heading">
-      <h2 id="garments-heading" class="h5 garments-heading">Garments</h2>
+      <h2 id="garments-heading" class="h5 garments-heading">Order items</h2>
 
       @for (item of current.items; track item._id; let index = $index) {
+        @if (isFabricSale(item)) {
+          <article class="garment-item fabric-sale-item">
+            <header class="garment-header d-flex align-items-center justify-content-between gap-3">
+              <div>
+                <p class="garment-number">Fabric sale {{ index + 1 }}</p>
+                <h3 class="h5 mb-0">{{ fabricSaleName(item) }}</h3>
+              </div>
+
+              <div class="garment-quantity">
+                Qty sold: {{ fabricSaleQuantity(item) }}
+                @if (fabricSaleUnit(item); as unit) {
+                  {{ unit }}
+                }
+              </div>
+            </header>
+
+            @if (item.fabricSaleSnapshot; as fabric) {
+              <section class="fabric-sale-details" aria-label="Saved fabric sale details">
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Fabric</span>
+                  <strong>{{ fabric.name }}</strong>
+                </div>
+
+                <div class="fabric-meta d-flex flex-wrap gap-2">
+                  <span>{{ label(fabric.type) }}</span>
+                  <span>{{ fabric.color }}</span>
+                  <span>{{ fabric.fabricId }}</span>
+                </div>
+
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Quantity sold</span>
+                  <strong>{{ fabric.quantitySold }} {{ label(fabric.unit) }}</strong>
+                </div>
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Saved price per unit</span>
+                  <strong>{{ fabric.pricePerUnit | currency: 'INR' }}</strong>
+                </div>
+                <div class="garment-line d-flex justify-content-between gap-3 fw-semibold">
+                  <span>Fabric sale total</span>
+                  <strong>{{ fabric.lineTotal | currency: 'INR' }}</strong>
+                </div>
+              </section>
+            } @else {
+              <section class="fabric-sale-details" aria-label="Fabric sale details">
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Quantity sold</span>
+                  <strong>{{ item.quantity }}</strong>
+                </div>
+                <div class="garment-line d-flex justify-content-between gap-3">
+                  <span>Saved price per unit</span>
+                  <strong>{{ fabricSalePrice(item) | currency: 'INR' }}</strong>
+                </div>
+                <div class="garment-line d-flex justify-content-between gap-3 fw-semibold">
+                  <span>Fabric sale total</span>
+                  <strong
+                    >{{
+                      fabricSaleLineTotal(item) === null
+                        ? '—'
+                        : (fabricSaleLineTotal(item) | currency: 'INR')
+                    }}</strong
+                  >
+                </div>
+              </section>
+            }
+
+            @if (item.notes) {
+              <div class="garment-notes d-flex flex-wrap gap-2 mt-2">
+                <span>Notes: {{ item.notes }}</span>
+              </div>
+            }
+          </article>
+        } @else {
         <article class="garment-item">
           <header class="garment-header d-flex align-items-center justify-content-between gap-3">
             <div>
@@ -478,6 +550,7 @@
             </details>
           }
         </article>
+        }
       }
     </section>
   }
