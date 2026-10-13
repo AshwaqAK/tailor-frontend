@@ -12,13 +12,16 @@
         class="btn btn-primary align-self-sm-start"
         routerLink="new"
         [queryParams]="customer() ? { customerId: customer()!.customerId } : {}"
-        >Create order</a
+        ><i class="bi bi-plus-circle fs-6 me-1" aria-hidden="true"></i
+        ><span>Create order</span></a
       >
     }
   </header>
   <section class="card border-0 shadow-sm mb-4">
     <div class="card-body">
-      <label class="form-label" for="order-customer-search">Find customer</label>
+      <label class="form-label" for="order-customer-search"
+        ><i class="bi bi-search fs-6 me-1" aria-hidden="true"></i>Find customer</label
+      >
       <div class="d-flex gap-2">
         <input
           id="order-customer-search"
@@ -53,7 +56,8 @@
     <div class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
       <span>{{ message }}</span
       ><button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
-        Try again
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
       </button>
     </div>
   }
@@ -78,7 +82,8 @@
             class="btn btn-primary"
             routerLink="new"
             [queryParams]="customer() ? { customerId: customer()!.customerId } : {}"
-            >Create first order</a
+            ><i class="bi bi-plus-circle fs-6 me-1" aria-hidden="true"></i
+            ><span>Create first order</span></a
           >
         }
       </div>
@@ -109,7 +114,7 @@
                 <td>{{ result.order.totalAmount | currency: 'INR' }}</td>
                 <td class="text-end">
                   <a class="btn btn-sm btn-outline-primary" [routerLink]="[result.order.orderId]"
-                    >View</a
+                    ><i class="bi bi-eye fs-6 me-1" aria-hidden="true"></i><span>View</span></a
                   >
                 </td>
               </tr>
@@ -129,7 +134,8 @@
             </p>
             <p class="fw-semibold">{{ result.order.totalAmount | currency: 'INR' }}</p>
             <a class="btn btn-outline-primary w-100" [routerLink]="[result.order.orderId]"
-              >View order</a
+              ><i class="bi bi-eye fs-6 me-1" aria-hidden="true"></i
+              ><span>View order</span></a
             >
           </article>
         }

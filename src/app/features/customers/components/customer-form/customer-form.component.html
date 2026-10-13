@@ -141,11 +141,14 @@
       [disabled]="submitting()"
       (click)="cancel()"
     >
-      Cancel
+      <i class="bi bi-x-circle fs-6 me-1" aria-hidden="true"></i>
+      <span>Cancel</span>
     </button>
     <button class="btn btn-primary form-action" type="submit" [disabled]="submitting()">
       @if (submitting()) {
         <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      } @else {
+        <i class="bi bi-check-circle fs-6 me-1" aria-hidden="true"></i>
       }
       {{ submitting() ? 'Saving…' : 'Save customer' }}
     </button>

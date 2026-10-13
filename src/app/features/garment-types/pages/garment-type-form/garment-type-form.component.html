@@ -81,7 +81,8 @@
               </p>
             </div>
             <button class="btn btn-outline-primary btn-sm" type="button" (click)="addGroup()">
-              Add group
+              <i class="bi bi-plus-circle fs-6 me-1" aria-hidden="true"></i>
+              <span>Add group</span>
             </button>
           </div>
 
@@ -125,7 +126,8 @@
                       type="button"
                       (click)="removeGroup(groupIndex)"
                     >
-                      Remove
+                      <i class="bi bi-trash fs-6 me-1" aria-hidden="true"></i>
+                      <span>Remove</span>
                     </button>
                   </div>
                 </div>
@@ -138,7 +140,8 @@
                       type="button"
                       (click)="addOption(groupIndex)"
                     >
-                      Add option
+                      <i class="bi bi-plus-circle fs-6 me-1" aria-hidden="true"></i>
+                      <span>Add option</span>
                     </button>
                   </div>
 
@@ -241,8 +244,10 @@
                             class="btn btn-outline-danger"
                             type="button"
                             (click)="removeOption(groupIndex, optionIndex)"
+                            aria-label="Remove customization option"
+                            title="Remove option"
                           >
-                            ×
+                            <i class="bi bi-trash fs-6" aria-hidden="true"></i>
                           </button>
                         </div>
                       </div>
@@ -273,7 +278,8 @@
               type="button"
               (click)="addMeasurementField()"
             >
-              Add field
+              <i class="bi bi-rulers fs-6 me-1" aria-hidden="true"></i>
+              <span>Add field</span>
             </button>
           </div>
 
@@ -352,8 +358,9 @@
                         type="button"
                         (click)="removeMeasurementField(fieldIndex)"
                         aria-label="Remove measurement field"
+                        title="Remove measurement field"
                       >
-                        ×
+                        <i class="bi bi-trash fs-6" aria-hidden="true"></i>
                       </button>
                     </div>
                   </div>
@@ -384,8 +391,12 @@
         </div>
       </div>
       <footer class="d-flex flex-column flex-sm-row justify-content-end gap-2 border-top p-3">
-        <button class="btn btn-outline-secondary" type="button" (click)="cancel()">Cancel</button>
+        <button class="btn btn-outline-secondary" type="button" (click)="cancel()">
+          <i class="bi bi-x-circle fs-6 me-1" aria-hidden="true"></i>
+          <span>Cancel</span>
+        </button>
         <button class="btn btn-primary" type="submit" [disabled]="submitting()">
+          <i class="bi bi-check-circle fs-6 me-1" aria-hidden="true"></i>
           {{
             submitting()
               ? editMode
