@@ -40,6 +40,13 @@ export const routes: Routes = [
           import('@features/reports/reports.routes').then((routes) => routes.REPORT_ROUTES),
       },
       {
+        path: 'audit-logs',
+        loadChildren: () =>
+          import('@features/audit-logs/audit-logs.routes').then(
+            (routes) => routes.AUDIT_LOG_ROUTES,
+          ),
+      },
+      {
         path: 'customers',
         loadChildren: () =>
           import('@features/customers/customers.routes').then((routes) => routes.CUSTOMER_ROUTES),
