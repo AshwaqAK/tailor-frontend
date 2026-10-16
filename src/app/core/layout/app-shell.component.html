@@ -9,7 +9,14 @@
     >
       <span class="navbar-toggler-icon"></span>
     </button>
-    <a class="navbar-brand fw-semibold" routerLink="/dashboard">Tailor</a>
+    <a class="navbar-brand fw-semibold" routerLink="/dashboard" aria-label="Shoukath Tailor home">
+      <img
+        class="app-shell-brand-logo"
+        src="assests/branding/Shoukath%20Tailor%20Gold%20Emblem.png"
+        alt="Shoukath Tailor"
+      />
+      <span>Shoukath Tailor</span>
+    </a>
     <div class="d-flex align-items-center gap-3 text-white">
       @if (user(); as currentUser) {
         <span class="d-none d-sm-inline small">{{ currentUser.name }}</span>
@@ -108,7 +115,7 @@
         routerLink="/fabrics"
         routerLinkActive="active"
         (click)="closeSidebar()"
-        ><i class="bi bi-scissors app-shell-nav-icon fs-6" aria-hidden="true"></i
+        ><i class="bi bi-layers app-shell-nav-icon fs-6" aria-hidden="true"></i
         ><span>Fabrics</span></a
       >
       <a

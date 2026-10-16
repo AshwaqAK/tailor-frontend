@@ -12,7 +12,17 @@
 }
 
 .navbar-brand {
+  align-items: center;
   color: var(--color-on-primary);
+  display: inline-flex;
+  gap: 0.55rem;
+}
+
+.app-shell-brand-logo {
+  display: block;
+  height: 2.5rem;
+  object-fit: contain;
+  width: 3.15rem;
 }
 
 .sidebar {
