@@ -78,6 +78,17 @@ describe('OrderDetailsComponent item display', () => {
     expect(item.querySelector('.garment-total')).toBeNull();
   });
 
+  it('preserves fractional fabric-sale quantities and the saved line total', () => {
+    const fixture = render([fabricSaleItem()], 560);
+    const item = fixture.nativeElement.querySelector('.fabric-sale-item') as HTMLElement;
+
+    expect(item.textContent).toContain('1.4');
+    expect(item.textContent).toContain('₹400.00');
+    expect(item.textContent).toContain('₹560.00');
+    expect(item.textContent).not.toContain('Tailoring');
+    expect(item.textContent).not.toContain('Garment total');
+  });
+
   it('preserves tailoring snapshot and attached fabric-cost displays', () => {
     const fixture = render([tailoringItemWithFabric()], 225);
     const item = fixture.nativeElement.querySelector('.garment-item') as HTMLElement;
@@ -215,16 +226,16 @@ function fabricSaleItem(): OrderItem {
     orderId: 'ORD-000001',
     itemType: OrderItemType.FABRIC_SALE,
     quantity: 2,
-    unitPrice: 50,
+    unitPrice: 400,
     fabricSaleSnapshot: {
       fabricId: 'FAB-000001',
       name: 'Silk fabric',
       type: FabricType.Silk,
       color: 'Blue',
       unit: QuantityUnit.Meter,
-      pricePerUnit: 50,
-      quantitySold: 2,
-      lineTotal: 100,
+      pricePerUnit: 400,
+      quantitySold: 1.4,
+      lineTotal: 560,
     },
     notes: 'Cut from the blue roll',
     createdAt: '2026-01-01T00:00:00.000Z',

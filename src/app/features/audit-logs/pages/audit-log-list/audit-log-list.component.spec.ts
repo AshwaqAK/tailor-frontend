@@ -4,6 +4,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import type { ComponentFixture } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { ApiError } from '@core/api/api-error';
 
 import { AuditLogsApiService } from '../../data-access/audit-logs-api.service';
@@ -19,7 +20,7 @@ import { AuditLogListComponent } from './audit-log-list.component';
 describe('AuditLogListComponent', () => {
   let fixture: ComponentFixture<AuditLogListComponent>;
   let component: AuditLogListComponent;
-  let api: { list: (query: AuditLogQuery) => ReturnType<typeof of<AuditLogListResponse>> };
+  let api: { list: (query: AuditLogQuery) => Observable<AuditLogListResponse> };
 
   beforeEach(async () => {
     api = {

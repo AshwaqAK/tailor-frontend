@@ -106,6 +106,21 @@ describe('PaymentsReportComponent', () => {
           grossCollections: 0,
           refunds: 0,
           netCollections: 0,
+          paymentCounts: {
+            byStatus: {
+              [PaymentStatus.Pending]: 0,
+              [PaymentStatus.Success]: 0,
+              [PaymentStatus.Failed]: 0,
+              [PaymentStatus.Refunded]: 0,
+            },
+            byMethod: {
+              [PaymentMethod.Cash]: 0,
+              [PaymentMethod.Upi]: 0,
+              [PaymentMethod.Card]: 0,
+              [PaymentMethod.BankTransfer]: 0,
+              [PaymentMethod.Other]: 0,
+            },
+          },
         }),
       ),
     );
