@@ -1,0 +1,223 @@
+<div class="container-fluid px-0">
+  <nav aria-label="Breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a routerLink="/alterations">Alterations</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Alteration details</li>
+    </ol>
+  </nav>
+
+  @if (error(); as message) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="load()">
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i><span>Try again</span>
+      </button>
+    </div>
+  }
+
+  @if (billError(); as message) {
+    <div
+      class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-warning" type="button" (click)="billError.set(null)">
+        Dismiss
+      </button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading alteration…</p>
+      </div>
+    </div>
+  } @else if (notFound()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h1 class="h5">Alteration not found</h1>
+        <p class="text-body-secondary">The requested alteration could not be found.</p>
+        <button class="btn btn-outline-primary" type="button" (click)="backToAlterations()">
+          <i class="bi bi-arrow-left fs-6 me-1" aria-hidden="true"></i
+          ><span>Back to alterations</span>
+        </button>
+      </div>
+    </div>
+  } @else if (alteration(); as current) {
+    <header class="detail-header d-flex flex-column flex-md-row justify-content-between gap-3 mb-4">
+      <div>
+        <p class="text-uppercase text-primary fw-semibold small mb-1">{{ current.alterationId }}</p>
+        <h1 class="h2 mb-2">Alteration details</h1>
+        <span class="badge status-badge">{{ label(current.status) }}</span>
+      </div>
+      <div class="d-flex flex-wrap gap-2 align-items-start">
+        <button class="btn btn-outline-secondary" type="button" (click)="backToAlterations()">
+          <i class="bi bi-arrow-left fs-6 me-1" aria-hidden="true"></i
+          ><span>Back to alterations</span>
+        </button>
+        @if (canUpdate() && form.dirty) {
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            [disabled]="saving()"
+            (click)="cancelEditing()"
+          >
+            Cancel edits
+          </button>
+        }
+      </div>
+    </header>
+
+    @if (feedback(); as message) {
+      <div class="alert alert-success" role="status">{{ message }}</div>
+    }
+
+    <div class="row g-4">
+      <div class="col-12 col-xl-5">
+        <section class="card border-0 shadow-sm h-100" aria-labelledby="identifiers-heading">
+          <div class="card-body p-3 p-md-4">
+            <h2 id="identifiers-heading" class="h5 mb-4">Identifiers and dates</h2>
+            <dl class="row mb-0 detail-list">
+              <dt class="col-sm-5">Alteration ID</dt>
+              <dd class="col-sm-7">{{ current.alterationId }}</dd>
+              <dt class="col-sm-5">Customer ID</dt>
+              <dd class="col-sm-7">{{ current.customerId }}</dd>
+              <dt class="col-sm-5">Original order</dt>
+              <dd class="col-sm-7">
+                <a [routerLink]="['/orders', current.originalOrderId]">{{
+                  current.originalOrderId
+                }}</a>
+              </dd>
+              <dt class="col-sm-5">Order-item reference</dt>
+              <dd class="col-sm-7 text-break">{{ current.originalOrderItemId }}</dd>
+              <dt class="col-sm-5">Request date</dt>
+              <dd class="col-sm-7">
+                {{ current.requestDate ? (current.requestDate | date: 'medium') : 'Not provided' }}
+              </dd>
+              <dt class="col-sm-5">Completion date</dt>
+              <dd class="col-sm-7">
+                {{
+                  current.completionDate
+                    ? (current.completionDate | date: 'medium')
+                    : 'Not completed'
+                }}
+              </dd>
+              <dt class="col-sm-5">Created</dt>
+              <dd class="col-sm-7">
+                {{ current.createdAt ? (current.createdAt | date: 'medium') : 'Not provided' }}
+              </dd>
+              <dt class="col-sm-5">Updated</dt>
+              <dd class="col-sm-7">
+                {{ current.updatedAt ? (current.updatedAt | date: 'medium') : 'Not provided' }}
+              </dd>
+            </dl>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-12 col-xl-7">
+        <section class="card border-0 shadow-sm mb-4" aria-labelledby="details-heading">
+          <div class="card-body p-3 p-md-4">
+            <div class="d-flex justify-content-between gap-3 mb-3">
+              <h2 id="details-heading" class="h5 mb-0">Description and charge</h2>
+              <span class="h5 mb-0">{{ current.charge | currency: 'INR' }}</span>
+            </div>
+            <form [formGroup]="form" (ngSubmit)="saveDetails()" novalidate>
+              <div class="mb-3">
+                <label class="form-label" for="alteration-detail-description">Description</label>
+                <textarea
+                  id="alteration-detail-description"
+                  class="form-control"
+                  [class.is-invalid]="
+                    form.controls.description.touched && form.controls.description.invalid
+                  "
+                  rows="4"
+                  maxlength="1000"
+                  formControlName="description"
+                ></textarea>
+                @if (form.controls.description.touched && form.controls.description.invalid) {
+                  <div class="invalid-feedback">
+                    Enter a non-empty description of 1,000 characters or fewer.
+                  </div>
+                }
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="alteration-detail-notes">Notes</label>
+                <textarea
+                  id="alteration-detail-notes"
+                  class="form-control"
+                  [class.is-invalid]="form.controls.notes.touched && form.controls.notes.invalid"
+                  rows="3"
+                  maxlength="1000"
+                  formControlName="notes"
+                ></textarea>
+                @if (form.controls.notes.touched && form.controls.notes.hasError('maxlength')) {
+                  <div class="invalid-feedback d-block">
+                    Notes must be 1,000 characters or fewer.
+                  </div>
+                }
+              </div>
+              <p class="small text-body-secondary">
+                Charge is read-only because the response does not expose a reliable billing
+                indicator.
+              </p>
+              @if (canUpdate() && form.dirty) {
+                <button class="btn btn-primary" type="submit" [disabled]="saving()">
+                  <i class="bi bi-save fs-6 me-1" aria-hidden="true"></i
+                  ><span>{{ saving() ? 'Saving…' : 'Save details' }}</span>
+                </button>
+              }
+            </form>
+          </div>
+        </section>
+
+        @if (canUpdate() && allowedStatuses().length) {
+          <section class="card border-0 shadow-sm" aria-labelledby="status-heading">
+            <div class="card-body p-3 p-md-4">
+              <h2 id="status-heading" class="h5 mb-3">Update status</h2>
+              <div class="d-flex flex-wrap gap-2">
+                @for (status of allowedStatuses(); track status) {
+                  <button
+                    class="btn btn-outline-primary"
+                    type="button"
+                    [disabled]="updatingStatus()"
+                    (click)="updateStatus(status)"
+                  >
+                    <i class="bi bi-arrow-repeat fs-6 me-1" aria-hidden="true"></i
+                    ><span>{{ label(status) }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          </section>
+        }
+
+        @if (canUpdate() && current.status === statuses.Completed && current.charge > 0) {
+          <section class="card border-0 shadow-sm mt-4" aria-labelledby="bill-heading">
+            <div class="card-body p-3 p-md-4">
+              <h2 id="bill-heading" class="h5 mb-2">Alteration bill</h2>
+              <p class="small text-body-secondary">
+                Create a separate bill for this completed alteration charge. The original order
+                total will not change.
+              </p>
+              <button
+                class="btn btn-primary"
+                type="button"
+                [disabled]="creatingBill()"
+                (click)="createBill()"
+              >
+                <i class="bi bi-receipt fs-6 me-1" aria-hidden="true"></i>
+                <span>{{ creatingBill() ? 'Creating bill…' : 'Create bill' }}</span>
+              </button>
+            </div>
+          </section>
+        }
+      </div>
+    </div>
+  }
+</div>

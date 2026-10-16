@@ -101,7 +101,9 @@ export interface TailoringPricingSnapshot {
 export interface Order {
   readonly _id: string;
   readonly orderId: string;
+  readonly orderType?: string;
   readonly customerId: string;
+  readonly originalOrderId?: string;
   readonly orderDate: string;
   readonly expectedDeliveryDate?: string;
   readonly status: OrderStatus;

@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+.detail-list dt,
+.detail-list dd {
+  margin-bottom: 0.85rem;
+}
+
+.detail-list dt {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
