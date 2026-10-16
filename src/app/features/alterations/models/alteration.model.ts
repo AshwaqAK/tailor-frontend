@@ -1,3 +1,5 @@
+import type { CursorPage, CursorPageMeta } from '@shared/models/pagination.model';
+
 export enum AlterationStatus {
   Requested = 'REQUESTED',
   InProgress = 'IN_PROGRESS',
@@ -50,7 +52,7 @@ export interface UpdateAlterationRequest {
 }
 
 export interface AlterationQuery {
-  readonly page?: number;
+  readonly cursor?: string;
   readonly limit?: number;
   readonly customerId?: string;
   readonly orderId?: string;
@@ -59,14 +61,6 @@ export interface AlterationQuery {
   readonly sortOrder?: AlterationSortOrder;
 }
 
-export interface AlterationListMeta {
-  readonly page: number;
-  readonly limit: number;
-  readonly total: number;
-  readonly totalPages: number;
-}
+export type AlterationListMeta = CursorPageMeta;
 
-export interface AlterationListResponse {
-  readonly data: readonly Alteration[];
-  readonly meta: AlterationListMeta;
-}
+export type AlterationListResponse = CursorPage<Alteration>;

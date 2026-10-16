@@ -17,8 +17,8 @@ export class AppointmentsApiService {
 
   list(query: AppointmentQuery = {}): Observable<PaginatedAppointments> {
     let params = new HttpParams();
-    if (query.page !== undefined) params = params.set('page', query.page);
     if (query.limit !== undefined) params = params.set('limit', query.limit);
+    if (query.cursor) params = params.set('cursor', query.cursor);
     if (query.customerId) params = params.set('customerId', query.customerId);
     if (query.orderId) params = params.set('orderId', query.orderId);
     if (query.appointmentDate) params = params.set('appointmentDate', query.appointmentDate);

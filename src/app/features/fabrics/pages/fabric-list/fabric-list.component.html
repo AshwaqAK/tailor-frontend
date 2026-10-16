@@ -134,22 +134,20 @@
         }
       </div>
       <footer class="d-flex justify-content-between align-items-center border-top p-3">
-        <span class="small text-body-secondary"
-          >Page {{ meta().page }} of {{ meta().totalPages }} · {{ meta().total }} fabrics</span
-        >
+        <span class="small text-body-secondary">Page {{ currentPage() }}</span>
         <div class="btn-group">
           <button
             class="btn btn-outline-secondary"
             type="button"
-            [disabled]="meta().page === 1"
-            (click)="page(meta().page - 1)"
+            [disabled]="loading() || currentPage() === 1"
+            (click)="previousPage()"
           >
             Previous</button
           ><button
             class="btn btn-outline-secondary"
             type="button"
-            [disabled]="meta().page === meta().totalPages"
-            (click)="page(meta().page + 1)"
+            [disabled]="loading() || !meta().hasNextPage || !meta().nextCursor"
+            (click)="nextPage()"
           >
             Next
           </button>

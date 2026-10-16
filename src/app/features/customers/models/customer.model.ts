@@ -1,3 +1,5 @@
+import type { CursorPage, CursorPageMeta } from '@shared/models/pagination.model';
+
 export enum CustomerGender {
   Male = 'MALE',
   Female = 'FEMALE',
@@ -22,20 +24,12 @@ export interface Customer {
   readonly updatedAt: string;
 }
 
-export interface CustomerListMeta {
-  readonly page: number;
-  readonly limit: number;
-  readonly total: number;
-  readonly totalPages: number;
-}
+export type CustomerListMeta = CursorPageMeta;
 
-export interface CustomerListResponse {
-  readonly data: readonly Customer[];
-  readonly meta: CustomerListMeta;
-}
+export type CustomerListResponse = CursorPage<Customer>;
 
 export interface CustomerQuery {
-  readonly page: number;
+  readonly cursor?: string;
   readonly limit: number;
   readonly search?: string;
   readonly sortBy: CustomerSortField;

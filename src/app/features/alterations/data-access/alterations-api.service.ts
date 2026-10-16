@@ -18,8 +18,8 @@ export class AlterationsApiService {
 
   list(query: AlterationQuery = {}): Observable<AlterationListResponse> {
     let params = new HttpParams();
-    if (query.page !== undefined) params = params.set('page', query.page);
     if (query.limit !== undefined) params = params.set('limit', query.limit);
+    if (query.cursor) params = params.set('cursor', query.cursor);
     if (query.customerId?.trim()) params = params.set('customerId', query.customerId.trim());
     if (query.orderId?.trim()) params = params.set('orderId', query.orderId.trim());
     if (query.status) params = params.set('status', query.status);

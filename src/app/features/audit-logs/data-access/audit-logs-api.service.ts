@@ -12,8 +12,8 @@ export class AuditLogsApiService {
   list(query: AuditLogQuery = {}): Observable<AuditLogListResponse> {
     let params = new HttpParams();
 
-    if (query.page !== undefined) params = params.set('page', query.page);
     if (query.limit !== undefined) params = params.set('limit', query.limit);
+    if (query.cursor) params = params.set('cursor', query.cursor);
     if (query.actorId?.trim()) params = params.set('actorId', query.actorId.trim());
     if (query.action) params = params.set('action', query.action);
     if (query.entityType) params = params.set('entityType', query.entityType);

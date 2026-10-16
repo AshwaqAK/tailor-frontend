@@ -17,11 +17,11 @@ export class CustomersApiService {
 
   list(query: CustomerQuery): Observable<CustomerListResponse> {
     let params = new HttpParams()
-      .set('page', query.page)
       .set('limit', query.limit)
       .set('sortBy', query.sortBy)
       .set('sortOrder', query.sortOrder);
 
+    if (query.cursor) params = params.set('cursor', query.cursor);
     if (query.search) params = params.set('search', query.search);
     if (query.isActive !== undefined) params = params.set('isActive', query.isActive);
 

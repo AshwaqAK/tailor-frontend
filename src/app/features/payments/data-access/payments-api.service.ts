@@ -16,8 +16,8 @@ export class PaymentsApiService {
 
   getByOrder(orderId: string, query: PaymentQuery = {}): Observable<PaginatedPayments> {
     let params = new HttpParams();
-    if (query.page !== undefined) params = params.set('page', query.page);
     if (query.limit !== undefined) params = params.set('limit', query.limit);
+    if (query.cursor) params = params.set('cursor', query.cursor);
     if (query.customerId) params = params.set('customerId', query.customerId);
     if (query.paymentMethod) params = params.set('paymentMethod', query.paymentMethod);
     if (query.status) params = params.set('status', query.status);

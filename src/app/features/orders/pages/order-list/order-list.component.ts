@@ -39,14 +39,17 @@ export class OrderListComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private requestSequence = 0;
+  private customerSearchSequence = 0;
+  private cursorHistory: readonly (string | undefined)[] = [undefined];
   readonly search = new FormControl('', { nonNullable: true });
   readonly results = signal<readonly Customer[]>([]);
   readonly customer = signal<Customer | null>(null);
   readonly orders = signal<readonly OrderWithItems[]>([]);
   readonly searching = signal(false);
   readonly loading = signal(false);
-  readonly loadingMore = signal(false);
   readonly cursorMeta = signal<CursorPaginatedOrders['meta']>(EMPTY_CURSOR_META);
+  readonly currentPage = signal(1);
   readonly error = signal<string | null>(null);
   readonly canCreate = computed(() =>
     [Role.SuperAdmin, Role.Manager, Role.Receptionist].includes(this.auth.user()?.role as Role),
@@ -57,7 +60,7 @@ export class OrderListComponent {
       .subscribe((value) => this.searchCustomers(value));
     const customerId = this.route.snapshot.queryParamMap.get('customerId');
     if (customerId) this.loadCustomer(customerId);
-    else this.loadAll();
+    else this.loadAll(undefined, 1);
   }
   selectCustomer(customer: Customer): void {
     this.customer.set(customer);
@@ -74,17 +77,24 @@ export class OrderListComponent {
     this.customer.set(null);
     this.search.setValue('');
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
-    this.loadAll();
+    this.loadAll(undefined, 1);
   }
   retry(): void {
     const customer = this.customer();
     if (customer) this.loadOrders(customer.customerId);
-    else this.loadAll();
+    else this.loadCurrentPage();
   }
-  loadMore(): void {
-    const cursor = this.cursorMeta().nextCursor;
-    if (!cursor || this.customer() || this.loadingMore()) return;
-    this.loadAll(cursor, true);
+  nextPage(): void {
+    const meta = this.cursorMeta();
+    const page = this.currentPage();
+    if (this.customer() || this.loading() || !meta.hasNextPage || !meta.nextCursor) return;
+    this.cursorHistory = [...this.cursorHistory.slice(0, page + 1), meta.nextCursor];
+    this.loadAll(meta.nextCursor, page + 1);
+  }
+  previousPage(): void {
+    const page = this.currentPage();
+    if (this.customer() || this.loading() || page <= 1) return;
+    this.loadAll(this.cursorHistory[page - 2], page - 1);
   }
   statusLabel(value: string): string {
     return value
@@ -99,19 +109,27 @@ export class OrderListComponent {
       this.results.set([]);
       return;
     }
+    const request = ++this.customerSearchSequence;
     this.searching.set(true);
     this.customersApi
-      .list({ page: 1, limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
+      .list({ limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
       .pipe(
-        finalize(() => this.searching.set(false)),
+        finalize(() => {
+          if (request === this.customerSearchSequence) this.searching.set(false);
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => this.results.set(response.data),
-        error: () => this.results.set([]),
+        next: (response) => {
+          if (request === this.customerSearchSequence) this.results.set(response.data);
+        },
+        error: () => {
+          if (request === this.customerSearchSequence) this.results.set([]);
+        },
       });
   }
   private loadCustomer(customerId: string): void {
+    const request = ++this.requestSequence;
     this.loading.set(true);
     this.customersApi
       .getByCustomerId(customerId)
@@ -121,54 +139,72 @@ export class OrderListComponent {
       )
       .subscribe({
         next: (customer) => {
+          if (request !== this.requestSequence) return;
           this.customer.set(customer);
           this.search.setValue(customer.name, { emitEvent: false });
           this.loadOrders(customer.customerId);
         },
-        error: (error: unknown) =>
+        error: (error: unknown) => {
+          if (request !== this.requestSequence) return;
           this.error.set(
             error instanceof ApiError ? error.message : 'Customer could not be loaded.',
-          ),
+          );
+        },
       });
   }
   private loadOrders(customerId: string): void {
+    const request = ++this.requestSequence;
     this.loading.set(true);
     this.error.set(null);
     this.ordersApi
       .getByCustomer(customerId)
       .pipe(
-        finalize(() => this.loading.set(false)),
+        finalize(() => {
+          if (request === this.requestSequence) this.loading.set(false);
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: (orders) => {
+          if (request !== this.requestSequence) return;
           this.orders.set(orders);
           this.cursorMeta.set(EMPTY_CURSOR_META);
+          this.currentPage.set(1);
+          this.cursorHistory = [undefined];
         },
-        error: (error: unknown) =>
-          this.error.set(error instanceof ApiError ? error.message : 'Orders could not be loaded.'),
+        error: (error: unknown) => {
+          if (request !== this.requestSequence) return;
+          this.error.set(error instanceof ApiError ? error.message : 'Orders could not be loaded.');
+        },
       });
   }
-  private loadAll(cursor?: string, append = false): void {
-    if (append) this.loadingMore.set(true);
-    else this.loading.set(true);
+  private loadCurrentPage(): void {
+    const page = this.currentPage();
+    this.loadAll(this.cursorHistory[page - 1], page);
+  }
+  private loadAll(cursor: string | undefined, page: number): void {
+    const request = ++this.requestSequence;
+    this.loading.set(true);
     this.error.set(null);
     this.ordersApi
       .getAll(cursor, 20)
       .pipe(
         finalize(() => {
-          this.loading.set(false);
-          this.loadingMore.set(false);
+          if (request === this.requestSequence) this.loading.set(false);
         }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: (response) => {
-          this.orders.update((orders) => (append ? [...orders, ...response.data] : response.data));
+          if (request !== this.requestSequence) return;
+          this.orders.set(response.data);
           this.cursorMeta.set(response.meta);
+          this.currentPage.set(page);
         },
-        error: (error: unknown) =>
-          this.error.set(error instanceof ApiError ? error.message : 'Orders could not be loaded.'),
+        error: (error: unknown) => {
+          if (request !== this.requestSequence) return;
+          this.error.set(error instanceof ApiError ? error.message : 'Orders could not be loaded.');
+        },
       });
   }
 }

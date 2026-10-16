@@ -384,7 +384,7 @@ export class OrderFormComponent {
     }
     this.searching.set(true);
     this.customersApi
-      .list({ page: 1, limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
+      .list({ limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
       .pipe(
         finalize(() => this.searching.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -670,7 +670,6 @@ export class OrderFormComponent {
     this.fabricError.set(null);
     this.fabricsApi
       .list({
-        page: 1,
         limit: 100,
         isActive: true,
         sortBy: 'name',

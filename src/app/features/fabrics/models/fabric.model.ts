@@ -1,3 +1,5 @@
+import type { CursorPage } from '@shared/models/pagination.model';
+
 export enum FabricType {
   Cotton = 'COTTON',
   Silk = 'SILK',
@@ -44,7 +46,7 @@ export type FabricSortField =
   | 'createdAt';
 
 export interface FabricQuery {
-  readonly page: number;
+  readonly cursor?: string;
   readonly limit: number;
   readonly name?: string;
   readonly type?: FabricType;
@@ -55,15 +57,7 @@ export interface FabricQuery {
   readonly sortOrder: 'asc' | 'desc';
 }
 
-export interface FabricListResponse {
-  readonly data: readonly Fabric[];
-  readonly meta: {
-    readonly page: number;
-    readonly limit: number;
-    readonly total: number;
-    readonly totalPages: number;
-  };
-}
+export type FabricListResponse = CursorPage<Fabric>;
 
 export interface CreateFabricRequest {
   readonly name: string;
