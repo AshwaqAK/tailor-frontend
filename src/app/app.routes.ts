@@ -57,6 +57,13 @@ export const routes: Routes = [
           import('@features/orders/orders.routes').then((routes) => routes.ORDER_ROUTES),
       },
       {
+        path: 'alterations',
+        loadChildren: () =>
+          import('@features/alterations/alterations.routes').then(
+            (routes) => routes.ALTERATION_ROUTES,
+          ),
+      },
+      {
         path: 'appointments',
         loadChildren: () =>
           import('@features/appointments/appointments.routes').then(

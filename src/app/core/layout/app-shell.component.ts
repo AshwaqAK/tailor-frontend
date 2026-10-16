@@ -22,6 +22,15 @@ export class AppShellComponent {
     return role === Role.SuperAdmin || role === Role.Manager;
   });
   readonly canViewAuditLogs = this.canViewReports;
+  readonly canViewAlterations = computed(() => {
+    const role = this.user()?.role;
+    return (
+      role === Role.SuperAdmin ||
+      role === Role.Manager ||
+      role === Role.Receptionist ||
+      role === Role.Tailor
+    );
+  });
   readonly sidebarOpen = signal(false);
   readonly signingOut = signal(false);
 

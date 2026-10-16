@@ -1,0 +1,248 @@
+<div class="container-fluid px-0">
+  <nav aria-label="Breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/alterations">Alterations</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Create alteration</li>
+    </ol>
+  </nav>
+
+  <header class="mb-4">
+    <h1 class="h2 mb-1">Create alteration</h1>
+    <p class="text-body-secondary mb-0">Record work requested for an existing garment order.</p>
+  </header>
+
+  @if (error(); as message) {
+    <div class="alert alert-danger" role="alert">{{ message }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <section class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-3 p-md-4">
+        <h2 class="h5 mb-3">Customer</h2>
+        @if (customer(); as selected) {
+          <div class="d-flex justify-content-between align-items-center border rounded p-3">
+            <div>
+              <strong>{{ selected.name }}</strong>
+              <p class="small text-body-secondary mb-0">
+                {{ selected.customerId }} · {{ selected.phone }}
+              </p>
+            </div>
+            <button class="btn btn-outline-secondary" type="button" (click)="changeCustomer()">
+              Change
+            </button>
+          </div>
+        } @else {
+          <label class="form-label" for="alteration-customer-search">
+            <i class="bi bi-search fs-6 me-1" aria-hidden="true"></i>Search customer
+          </label>
+          <input
+            id="alteration-customer-search"
+            class="form-control"
+            type="search"
+            [formControl]="search"
+            placeholder="Name, phone, or customer ID"
+            autocomplete="off"
+          />
+          @if (loadingSearch()) {
+            <p class="small text-body-secondary mt-2 mb-0" role="status">Searching…</p>
+          }
+          @if (searchResults().length) {
+            <div class="customer-results border rounded mt-2">
+              @for (result of searchResults(); track result._id) {
+                <button class="customer-result" type="button" (click)="selectCustomer(result)">
+                  <strong>{{ result.name }}</strong>
+                  <span>{{ result.customerId }} · {{ result.phone }}</span>
+                </button>
+              }
+            </div>
+          }
+          @if (form.controls.customerId.touched && form.controls.customerId.invalid) {
+            <div class="text-danger small mt-2">Select a customer.</div>
+          }
+        }
+      </div>
+    </section>
+
+    <section class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-3 p-md-4">
+        <h2 class="h5 mb-3">Original garment order</h2>
+        @if (ordersError(); as message) {
+          <div
+            class="alert alert-danger d-flex justify-content-between align-items-center"
+            role="alert"
+          >
+            <span>{{ message }}</span>
+            <button class="btn btn-sm btn-outline-danger" type="button" (click)="retryOrders()">
+              <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i
+              ><span>Try again</span>
+            </button>
+          </div>
+        }
+        <label class="form-label" for="alteration-order-select">Order *</label>
+        <select
+          id="alteration-order-select"
+          class="form-select"
+          [class.is-invalid]="
+            form.controls.originalOrderId.touched && form.controls.originalOrderId.invalid
+          "
+          formControlName="originalOrderId"
+          [disabled]="!customer() || loadingOrders() || !orders().length"
+          (change)="selectOrder($any($event.target).value)"
+        >
+          <option value="">{{ loadingOrders() ? 'Loading orders…' : 'Select an order' }}</option>
+          @for (order of orders(); track order.order._id) {
+            <option [value]="order.order.orderId">{{ orderLabel(order) }}</option>
+          }
+        </select>
+        @if (!loadingOrders() && customer() && !ordersError() && !orders().length) {
+          <p class="small text-body-secondary mt-2 mb-0">
+            No eligible garment orders were found for this customer.
+          </p>
+        }
+        @if (form.controls.originalOrderId.touched && form.controls.originalOrderId.invalid) {
+          <div class="invalid-feedback">Select the original order.</div>
+        }
+      </div>
+    </section>
+
+    <section class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-3 p-md-4">
+        <h2 class="h5 mb-3">Original order item</h2>
+        @if (orderDetailsError(); as message) {
+          <div
+            class="alert alert-danger d-flex justify-content-between align-items-center"
+            role="alert"
+          >
+            <span>{{ message }}</span>
+            <button
+              class="btn btn-sm btn-outline-danger"
+              type="button"
+              (click)="retryOrderDetails()"
+            >
+              <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i
+              ><span>Try again</span>
+            </button>
+          </div>
+        }
+        <label class="form-label" for="alteration-item-select">Garment item *</label>
+        <select
+          id="alteration-item-select"
+          class="form-select"
+          [class.is-invalid]="
+            form.controls.originalOrderItemId.touched && form.controls.originalOrderItemId.invalid
+          "
+          formControlName="originalOrderItemId"
+          [disabled]="loadingOrderDetails() || !orderItems().length"
+          (change)="selectItem($any($event.target).value)"
+        >
+          <option value="">
+            {{ loadingOrderDetails() ? 'Loading order items…' : 'Select a garment item' }}
+          </option>
+          @for (item of orderItems(); track item._id) {
+            <option [value]="item._id">{{ itemLabel(item) }} · {{ item._id }}</option>
+          }
+        </select>
+        @if (
+          !loadingOrderDetails() &&
+          form.controls.originalOrderId.value &&
+          !orderDetailsError() &&
+          !orderItems().length
+        ) {
+          <p class="small text-body-secondary mt-2 mb-0">
+            This order has no eligible tailoring items.
+          </p>
+        }
+        @if (
+          form.controls.originalOrderItemId.touched && form.controls.originalOrderItemId.invalid
+        ) {
+          <div class="invalid-feedback">Select the garment item being altered.</div>
+        }
+      </div>
+    </section>
+
+    <section class="card border-0 shadow-sm mb-5">
+      <div class="card-body p-3 p-md-4">
+        <h2 class="h5 mb-3">Alteration details</h2>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label" for="alteration-description">Description *</label>
+            <textarea
+              id="alteration-description"
+              class="form-control"
+              [class.is-invalid]="
+                form.controls.description.touched && form.controls.description.invalid
+              "
+              rows="4"
+              maxlength="1000"
+              formControlName="description"
+            ></textarea>
+            @if (
+              form.controls.description.touched && form.controls.description.hasError('required')
+            ) {
+              <div class="invalid-feedback">Enter a description.</div>
+            } @else if (
+              form.controls.description.touched && form.controls.description.hasError('pattern')
+            ) {
+              <div class="invalid-feedback">Description cannot be empty.</div>
+            } @else if (
+              form.controls.description.touched && form.controls.description.hasError('maxlength')
+            ) {
+              <div class="invalid-feedback">Description must be 1,000 characters or fewer.</div>
+            }
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="alteration-notes">Notes</label>
+            <textarea
+              id="alteration-notes"
+              class="form-control"
+              rows="3"
+              maxlength="1000"
+              formControlName="notes"
+            ></textarea>
+            @if (form.controls.notes.touched && form.controls.notes.hasError('maxlength')) {
+              <div class="invalid-feedback d-block">Notes must be 1,000 characters or fewer.</div>
+            }
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="alteration-charge">Alteration charge (INR)</label>
+            <input
+              id="alteration-charge"
+              class="form-control"
+              [class.is-invalid]="form.controls.charge.touched && form.controls.charge.invalid"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="charge"
+            />
+            @if (form.controls.charge.touched && form.controls.charge.hasError('min')) {
+              <div class="invalid-feedback">Charge cannot be negative.</div>
+            } @else if (
+              form.controls.charge.touched && form.controls.charge.hasError('maxDecimalPlaces')
+            ) {
+              <div class="invalid-feedback">Charge can have at most two decimal places.</div>
+            }
+          </div>
+        </div>
+        <p class="small text-body-secondary mt-3 mb-0">
+          This charge is separate from the original garment order total. Zero-charge alterations are
+          allowed, but an alteration bill requires a charge greater than zero.
+        </p>
+      </div>
+    </section>
+
+    <footer class="save-footer">
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        [disabled]="submitting()"
+        (click)="cancel()"
+      >
+        Cancel
+      </button>
+      <button class="btn btn-primary" type="submit" [disabled]="submitting()">
+        <i class="bi bi-check2-circle fs-6 me-1" aria-hidden="true"></i>
+        <span>{{ submitting() ? 'Creating…' : 'Create alteration' }}</span>
+      </button>
+    </footer>
+  </form>
+</div>

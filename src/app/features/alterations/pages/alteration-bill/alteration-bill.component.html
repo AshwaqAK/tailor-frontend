@@ -1,0 +1,348 @@
+<div class="container-fluid px-0">
+  <nav aria-label="Breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a routerLink="/alterations">Alterations</a></li>
+      <li class="breadcrumb-item">
+        <a [routerLink]="['/alterations', alterationIdForLink()]">Alteration details</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Bill</li>
+    </ol>
+  </nav>
+
+  @if (error(); as message) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="load()">
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i><span>Try again</span>
+      </button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading alteration bill…</p>
+      </div>
+    </div>
+  } @else if (notFound()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h1 class="h5">Alteration bill not found</h1>
+        <p class="text-body-secondary">The alteration or billing order could not be found.</p>
+        <a class="btn btn-outline-primary" routerLink="/alterations">Back to alterations</a>
+      </div>
+    </div>
+  } @else if (invalidBill()) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h1 class="h5">Not an alteration bill</h1>
+        <p class="text-body-secondary">The returned order is not marked as an alteration bill.</p>
+        <button class="btn btn-outline-primary" type="button" (click)="backToAlteration()">
+          Back to alteration
+        </button>
+      </div>
+    </div>
+  } @else if (bill(); as currentBill) {
+    @if (alteration(); as currentAlteration) {
+      <header class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4">
+        <div>
+          <p class="text-uppercase text-primary fw-semibold small mb-1">Alteration bill</p>
+          <h1 class="h2 mb-1">{{ currentBill.order.orderId }}</h1>
+          <p class="text-body-secondary mb-0">
+            {{ currentAlteration.alterationId }} · {{ currentAlteration.description }}
+          </p>
+        </div>
+        <button
+          class="btn btn-outline-secondary align-self-start"
+          type="button"
+          (click)="backToAlteration()"
+        >
+          <i class="bi bi-arrow-left fs-6 me-1" aria-hidden="true"></i
+          ><span>Back to alteration</span>
+        </button>
+      </header>
+
+      <div class="row g-4">
+        <div class="col-12 col-xl-7">
+          <section class="card border-0 shadow-sm" aria-labelledby="bill-summary-heading">
+            <div class="card-body p-3 p-md-4">
+              <h2 id="bill-summary-heading" class="h5 mb-4">Bill details</h2>
+              <dl class="row mb-0 detail-list">
+                <dt class="col-sm-5">Bill/order ID</dt>
+                <dd class="col-sm-7">{{ currentBill.order.orderId }}</dd>
+                <dt class="col-sm-5">Customer ID</dt>
+                <dd class="col-sm-7">{{ currentBill.order.customerId }}</dd>
+                <dt class="col-sm-5">Original order ID</dt>
+                <dd class="col-sm-7">
+                  <a
+                    [routerLink]="[
+                      '/orders',
+                      currentBill.order.originalOrderId || currentAlteration.originalOrderId,
+                    ]"
+                    >{{ currentBill.order.originalOrderId || currentAlteration.originalOrderId }}</a
+                  >
+                </dd>
+                <dt class="col-sm-5">Order status</dt>
+                <dd class="col-sm-7">
+                  <span class="badge text-bg-light">{{ label(currentBill.order.status) }}</span>
+                </dd>
+                <dt class="col-sm-5">Payment status</dt>
+                <dd class="col-sm-7">
+                  <span class="badge text-bg-light">{{ label(currentBill.paymentStatus) }}</span>
+                </dd>
+                <dt class="col-sm-5">Created</dt>
+                <dd class="col-sm-7">
+                  {{
+                    currentBill.order.createdAt
+                      ? (currentBill.order.createdAt | date: 'medium')
+                      : 'Not provided'
+                  }}
+                </dd>
+              </dl>
+            </div>
+          </section>
+        </div>
+        <div class="col-12 col-xl-5">
+          <section class="card border-0 shadow-sm" aria-labelledby="amounts-heading">
+            <div class="card-body p-3 p-md-4">
+              <h2 id="amounts-heading" class="h5 mb-4">Amounts</h2>
+              <dl class="row mb-0 detail-list">
+                <dt class="col-7">Total amount</dt>
+                <dd class="col-5 text-end">
+                  {{ currentBill.order.totalAmount | currency: 'INR' }}
+                </dd>
+                <dt class="col-7">Paid amount</dt>
+                <dd class="col-5 text-end">{{ currentBill.order.paidAmount | currency: 'INR' }}</dd>
+                <dt class="col-7">Outstanding balance</dt>
+                <dd class="col-5 text-end">
+                  {{ currentBill.order.balanceAmount | currency: 'INR' }}
+                </dd>
+              </dl>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <section class="card border-0 shadow-sm mt-4" aria-labelledby="payments-heading">
+        <div class="card-body p-3 p-md-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <h2 id="payments-heading" class="h5 mb-0">
+              <i class="bi bi-clock-history fs-6 me-1" aria-hidden="true"></i>Payments
+            </h2>
+            @if (canCreatePayment() && !paymentFormOpen()) {
+              <button
+                class="btn btn-sm btn-primary"
+                type="button"
+                [disabled]="!canCollectPayment() || paymentDetailsRefreshing()"
+                (click)="openPaymentForm()"
+              >
+                <i class="bi bi-cash-coin fs-6 me-1" aria-hidden="true"></i>
+                <span>Add payment</span>
+              </button>
+            }
+          </div>
+
+          @if (!canCreatePayment()) {
+            <p class="text-body-secondary small">Payment collection is read-only for your role.</p>
+          } @else if (!canCollectPayment()) {
+            <p class="text-body-secondary small">This bill has no outstanding balance.</p>
+          }
+
+          @if (paymentSuccess(); as message) {
+            <div class="alert alert-success" role="status">{{ message }}</div>
+          }
+          @if (paymentRefreshError(); as message) {
+            <div
+              class="alert alert-warning d-flex justify-content-between align-items-center gap-2"
+              role="alert"
+            >
+              <span>{{ message }}</span>
+              <button
+                class="btn btn-sm btn-outline-warning"
+                type="button"
+                (click)="refreshPaymentData()"
+              >
+                <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Try again
+              </button>
+            </div>
+          }
+
+          @if (paymentFormOpen()) {
+            <form
+              class="border rounded p-3 mb-4"
+              [formGroup]="paymentForm"
+              (ngSubmit)="submitPayment()"
+              novalidate
+            >
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="alteration-payment-amount">Amount</label>
+                  <input
+                    class="form-control"
+                    id="alteration-payment-amount"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    formControlName="amount"
+                    [class.is-invalid]="
+                      paymentForm.controls.amount.touched && paymentForm.controls.amount.invalid
+                    "
+                  />
+                  @if (paymentForm.controls.amount.touched && paymentForm.controls.amount.invalid) {
+                    <div class="invalid-feedback">
+                      Enter a positive amount with up to two decimal places.
+                    </div>
+                  }
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="alteration-payment-method">Payment method</label>
+                  <select
+                    class="form-select"
+                    id="alteration-payment-method"
+                    formControlName="paymentMethod"
+                    [class.is-invalid]="
+                      paymentForm.controls.paymentMethod.touched &&
+                      paymentForm.controls.paymentMethod.invalid
+                    "
+                  >
+                    <option [ngValue]="null">Select method</option>
+                    @for (method of paymentMethods; track method) {
+                      <option [ngValue]="method">{{ label(method) }}</option>
+                    }
+                  </select>
+                  @if (
+                    paymentForm.controls.paymentMethod.touched &&
+                    paymentForm.controls.paymentMethod.invalid
+                  ) {
+                    <div class="invalid-feedback">Select a payment method.</div>
+                  }
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="alteration-payment-reference"
+                    >Reference (optional)</label
+                  >
+                  <input
+                    class="form-control"
+                    id="alteration-payment-reference"
+                    type="text"
+                    maxlength="200"
+                    formControlName="transactionId"
+                    [class.is-invalid]="
+                      paymentForm.controls.transactionId.touched &&
+                      paymentForm.controls.transactionId.invalid
+                    "
+                  />
+                  @if (
+                    paymentForm.controls.transactionId.touched &&
+                    paymentForm.controls.transactionId.invalid
+                  ) {
+                    <div class="invalid-feedback">
+                      Reference must not be blank and can be at most 200 characters.
+                    </div>
+                  }
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="alteration-payment-notes">Notes (optional)</label>
+                  <input
+                    class="form-control"
+                    id="alteration-payment-notes"
+                    type="text"
+                    maxlength="1000"
+                    formControlName="notes"
+                  />
+                </div>
+              </div>
+              @if (paymentSubmitError(); as message) {
+                <div class="alert alert-danger mt-3 mb-0" role="alert">{{ message }}</div>
+              }
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  type="button"
+                  (click)="closePaymentForm()"
+                >
+                  Cancel
+                </button>
+                <button
+                  class="btn btn-sm btn-primary"
+                  type="submit"
+                  [disabled]="paymentSubmitting()"
+                >
+                  @if (paymentSubmitting()) {
+                    <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                  }
+                  Save payment
+                </button>
+              </div>
+            </form>
+          }
+
+          @if (paymentsError(); as message) {
+            <div
+              class="alert alert-danger d-flex justify-content-between align-items-center gap-2"
+              role="alert"
+            >
+              <span>{{ message }}</span>
+              <button class="btn btn-sm btn-outline-danger" type="button" (click)="loadPayments()">
+                Try again
+              </button>
+            </div>
+          } @else if (paymentsLoading()) {
+            <div class="text-center py-3" aria-live="polite" aria-busy="true">
+              <span
+                class="spinner-border spinner-border-sm text-primary me-2"
+                aria-hidden="true"
+              ></span
+              >Loading payments…
+            </div>
+          } @else if (payments().length === 0) {
+            <p class="text-body-secondary mb-0">No payments recorded.</p>
+          } @else {
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <caption class="visually-hidden">
+                  Payment history for alteration bill
+                  {{
+                    currentBill.order.orderId
+                  }}
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col">Method</th>
+                    <th scope="col">Reference</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (payment of payments(); track payment.paymentId) {
+                    <tr>
+                      <td>{{ payment.paidAt ?? payment.createdAt | date: 'mediumDate' }}</td>
+                      <td>{{ payment.amount | currency: 'INR' }}</td>
+                      <td>{{ label(payment.paymentMethod) }}</td>
+                      <td>{{ payment.transactionId || '—' }}</td>
+                      <td>
+                        <span class="badge text-bg-light">{{ label(payment.status) }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </section>
+
+      @if (currentBill.items.length === 0) {
+        <div class="alert alert-info mt-4" role="status">
+          This alteration bill has no order items.
+        </div>
+      }
+    }
+  }
+</div>
