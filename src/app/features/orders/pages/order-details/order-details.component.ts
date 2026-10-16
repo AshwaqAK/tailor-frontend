@@ -219,7 +219,8 @@ export class OrderDetailsComponent {
           ),
       });
   }
-  label(value: string): string {
+  label(value: string | null | undefined): string {
+    if (!value?.trim()) return '';
     return value
       .toLowerCase()
       .split('_')
