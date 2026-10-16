@@ -79,7 +79,7 @@ describe('AlterationBillComponent', () => {
     const fixture = TestBed.createComponent(AlterationBillComponent);
     fixture.detectChanges();
 
-    expect(getByOrderPayments).toHaveBeenCalledWith('ORD-000099', { limit: 100 });
+    expect(getByOrderPayments).toHaveBeenCalledWith('ORD-000099', { limit: 20 });
     expect(getByOrderPayments).not.toHaveBeenCalledWith('ORD-000002', expect.anything());
   });
 
@@ -119,7 +119,7 @@ describe('AlterationBillComponent', () => {
     );
     expect(component.bill()?.order.paidAmount).toBe(50);
     expect(component.payments()).toEqual([payment]);
-    expect(getByOrderPayments).toHaveBeenCalledWith('ORD-000099', { limit: 100 });
+    expect(getByOrderPayments).toHaveBeenCalledWith('ORD-000099', { limit: 20 });
   });
 
   it('validates positive amounts and payment methods and does not collect an already-paid bill', async () => {

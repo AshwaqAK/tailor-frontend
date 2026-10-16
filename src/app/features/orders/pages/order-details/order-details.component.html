@@ -329,6 +329,30 @@
               }
             </tbody>
           </table>
+          <nav
+            class="d-flex justify-content-between align-items-center gap-2 mt-3"
+            aria-label="Payment history pages"
+          >
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              [disabled]="paymentsLoading() || paymentPage() <= 1"
+              (click)="previousPaymentPage()"
+            >
+              <i class="bi bi-chevron-left me-1" aria-hidden="true"></i>Previous
+            </button>
+            <span class="small text-body-secondary" aria-live="polite"
+              >Page {{ paymentPage() }}</span
+            >
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              [disabled]="paymentsLoading() || !paymentMeta().hasNextPage"
+              (click)="nextPaymentPage()"
+            >
+              Next<i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
+            </button>
+          </nav>
         </div>
       }
     </section>

@@ -18,16 +18,19 @@ import {
 
 describe('AlterationFormComponent', () => {
   it('loads customer orders and then order details, using the selected item _id', async () => {
-    const orders = new Subject<readonly OrderWithItems[]>();
+    const orders = new Subject<unknown>();
     const details = new Subject<OrderWithItems>();
-    const getByCustomer = vi.fn(() => orders);
+    const getAll = vi.fn(() => orders);
     const getByOrderId = vi.fn(() => details);
-    const { component } = await configure({ getByCustomer, getByOrderId });
+    const { component } = await configure({ getAll, getByOrderId });
     const customer = createCustomer();
 
     component.selectCustomer(customer);
-    expect(getByCustomer).toHaveBeenCalledWith('CUS-000001');
-    orders.next([orderWithItems('ORD-000001', [tailoringItem(), fabricSaleItem()])]);
+    expect(getAll).toHaveBeenCalledWith(undefined, 20, 'CUS-000001');
+    orders.next({
+      data: [orderWithItems('ORD-000001', [tailoringItem(), fabricSaleItem()])],
+      meta: { limit: 20, hasNextPage: false, nextCursor: null },
+    });
     expect(component.orders()).toHaveLength(1);
 
     component.selectOrder('ORD-000001');
@@ -41,9 +44,9 @@ describe('AlterationFormComponent', () => {
   });
 
   it('clears dependent selections when the customer or order changes', async () => {
-    const getByCustomer = vi.fn(() => of([]));
+    const getAll = vi.fn(() => of(cursorOrders([])));
     const getByOrderId = vi.fn(() => of(orderWithItems('ORD-000001', [tailoringItem()])));
-    const { component } = await configure({ getByCustomer, getByOrderId });
+    const { component } = await configure({ getAll, getByOrderId });
 
     component.selectCustomer(createCustomer());
     component.orders.set([orderWithItems('ORD-000001', [tailoringItem()])]);
@@ -63,12 +66,14 @@ describe('AlterationFormComponent', () => {
 
   it('excludes alteration orders and fabric-sale-only items', async () => {
     const { component } = await configure({
-      getByCustomer: vi.fn(() =>
-        of([
-          orderWithItems('ORD-000001', [tailoringItem()]),
-          orderWithItems('ORD-000002', [tailoringItem()], 'ALTERATION'),
-          orderWithItems('ORD-000003', [fabricSaleItem()]),
-        ]),
+      getAll: vi.fn(() =>
+        of(
+          cursorOrders([
+            orderWithItems('ORD-000001', [tailoringItem()]),
+            orderWithItems('ORD-000002', [tailoringItem()], 'ALTERATION'),
+            orderWithItems('ORD-000003', [fabricSaleItem()]),
+          ]),
+        ),
       ),
       getByOrderId: vi.fn(() =>
         of(orderWithItems('ORD-000001', [tailoringItem(), fabricSaleItem()])),
@@ -76,17 +81,14 @@ describe('AlterationFormComponent', () => {
     });
 
     component.selectCustomer(createCustomer());
-    expect(component.orders().map((order) => order.order.orderId)).toEqual([
-      'ORD-000001',
-      'ORD-000003',
-    ]);
+    expect(component.orders().map((order) => order.order.orderId)).toEqual(['ORD-000001']);
     component.selectOrder('ORD-000001');
     expect(component.orderItems().map((item) => item._id)).toEqual(['item-1']);
   });
 
   it('validates description, notes, and optional charge', async () => {
     const { component } = await configure({
-      getByCustomer: vi.fn(() => of([])),
+      getAll: vi.fn(() => of(cursorOrders([]))),
       getByOrderId: vi.fn(),
     });
     component.form.controls.description.setValue('   ');
@@ -108,7 +110,7 @@ describe('AlterationFormComponent', () => {
     });
     const navigate = vi.fn();
     const { component } = await configure(
-      { getByCustomer: vi.fn(() => of([])), getByOrderId: vi.fn() },
+      { getAll: vi.fn(() => of(cursorOrders([]))), getByOrderId: vi.fn() },
       { create, navigate },
     );
     component.customer.set(createCustomer());
@@ -144,7 +146,7 @@ describe('AlterationFormComponent', () => {
       return createResponse;
     });
     const { component } = await configure(
-      { getByCustomer: vi.fn(() => of([])), getByOrderId: vi.fn() },
+      { getAll: vi.fn(() => of(cursorOrders([]))), getByOrderId: vi.fn() },
       { create },
     );
     component.customer.set(createCustomer());
@@ -165,8 +167,12 @@ describe('AlterationFormComponent', () => {
   });
 });
 
+function cursorOrders(data: readonly OrderWithItems[]) {
+  return { data, meta: { limit: 20, hasNextPage: false, nextCursor: null } };
+}
+
 async function configure(
-  ordersApi: { getByCustomer: () => unknown; getByOrderId: () => unknown },
+  ordersApi: { getAll?: () => unknown; getByOrderId: () => unknown },
   alterationsApi: { create?: ReturnType<typeof vi.fn>; navigate?: ReturnType<typeof vi.fn> } = {},
 ): Promise<{ component: AlterationFormComponent }> {
   await TestBed.configureTestingModule({
@@ -188,7 +194,13 @@ async function configure(
         provide: CustomersApiService,
         useValue: { list: vi.fn(), getByCustomerId: vi.fn() },
       },
-      { provide: OrdersApiService, useValue: ordersApi },
+      {
+        provide: OrdersApiService,
+        useValue: {
+          getAll: ordersApi.getAll ?? (() => of(cursorOrders([]))),
+          getByOrderId: ordersApi.getByOrderId,
+        },
+      },
       {
         provide: ActivatedRoute,
         useValue: { snapshot: { queryParamMap: { get: vi.fn(() => null) } } },

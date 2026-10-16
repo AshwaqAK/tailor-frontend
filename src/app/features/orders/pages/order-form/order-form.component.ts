@@ -79,6 +79,7 @@ export class OrderFormComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private allowNavigation = false;
+  private customerSearchCursor: string | null = null;
   readonly search = new FormControl('', { nonNullable: true });
   readonly searchResults = signal<readonly Customer[]>([]);
   readonly customer = signal<Customer | null>(null);
@@ -86,6 +87,7 @@ export class OrderFormComponent {
   readonly garmentTypes = signal<readonly GarmentType[]>([]);
   readonly fabrics = signal<readonly Fabric[]>([]);
   readonly searching = signal(false);
+  readonly searchHasNextPage = signal(false);
   readonly loadingMeasurements = signal(false);
   readonly loadingGarmentTypes = signal(true);
   readonly garmentTypeError = signal<string | null>(null);
@@ -380,8 +382,11 @@ export class OrderFormComponent {
     const search = value.trim();
     if (search.length < 2 || this.customer()) {
       this.searchResults.set([]);
+      this.customerSearchCursor = null;
+      this.searchHasNextPage.set(false);
       return;
     }
+    this.customerSearchCursor = null;
     this.searching.set(true);
     this.customersApi
       .list({ limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
@@ -390,8 +395,43 @@ export class OrderFormComponent {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => this.searchResults.set(response.data),
+        next: (response) => {
+          this.searchResults.set(response.data);
+          this.customerSearchCursor = response.meta.nextCursor;
+          this.searchHasNextPage.set(response.meta.hasNextPage);
+        },
         error: () => this.searchResults.set([]),
+      });
+  }
+  loadMoreCustomers(): void {
+    const search = this.search.value.trim();
+    if (!search || !this.customerSearchCursor || !this.searchHasNextPage() || this.searching())
+      return;
+    this.searching.set(true);
+    this.customersApi
+      .list({
+        limit: 10,
+        cursor: this.customerSearchCursor,
+        search,
+        sortBy: 'name',
+        sortOrder: 'asc',
+        isActive: true,
+      })
+      .pipe(
+        finalize(() => this.searching.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.searchResults.update((current) => [
+            ...new Map(
+              [...current, ...response.data].map((customer) => [customer.customerId, customer]),
+            ).values(),
+          ]);
+          this.customerSearchCursor = response.meta.nextCursor;
+          this.searchHasNextPage.set(response.meta.hasNextPage);
+        },
+        error: () => this.searchHasNextPage.set(false),
       });
   }
   private applyItemType(item: ItemGroup, itemType: OrderItemType): void {

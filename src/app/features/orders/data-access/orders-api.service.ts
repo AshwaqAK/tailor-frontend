@@ -15,9 +15,10 @@ import type {
 @Injectable({ providedIn: 'root' })
 export class OrdersApiService {
   private readonly api = inject(ApiService);
-  getAll(cursor?: string, limit = 20): Observable<CursorPaginatedOrders> {
+  getAll(cursor?: string, limit = 20, customerId?: string): Observable<CursorPaginatedOrders> {
     let params = new HttpParams().set('limit', limit);
     if (cursor) params = params.set('cursor', cursor);
+    if (customerId) params = params.set('customerId', customerId);
     return this.api.get('orders', params);
   }
   getByCustomer(customerId: string): Observable<readonly OrderWithItems[]> {

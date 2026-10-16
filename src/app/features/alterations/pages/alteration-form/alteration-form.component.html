@@ -55,6 +55,16 @@
                 </button>
               }
             </div>
+            @if (searchHasNextPage()) {
+              <button
+                class="btn btn-sm btn-outline-primary mt-2"
+                type="button"
+                [disabled]="loadingSearch()"
+                (click)="loadMoreCustomers()"
+              >
+                Load more customers
+              </button>
+            }
           }
           @if (form.controls.customerId.touched && form.controls.customerId.invalid) {
             <div class="text-danger small mt-2">Select a customer.</div>
@@ -98,6 +108,19 @@
           <p class="small text-body-secondary mt-2 mb-0">
             No eligible garment orders were found for this customer.
           </p>
+        }
+        @if (ordersHasNextPage() && !ordersError()) {
+          <button
+            class="btn btn-sm btn-outline-primary mt-2"
+            type="button"
+            [disabled]="loadingOrders()"
+            (click)="loadMoreOrders()"
+          >
+            @if (loadingOrders()) {
+              <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+            }
+            Load more orders
+          </button>
         }
         @if (form.controls.originalOrderId.touched && form.controls.originalOrderId.invalid) {
           <div class="invalid-feedback">Select the original order.</div>

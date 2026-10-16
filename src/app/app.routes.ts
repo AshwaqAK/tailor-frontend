@@ -82,6 +82,11 @@ export const routes: Routes = [
             (routes) => routes.GARMENT_TYPE_ROUTES,
           ),
       },
+      {
+        path: 'services',
+        loadChildren: () =>
+          import('@features/services/services.routes').then((routes) => routes.SERVICE_ROUTES),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

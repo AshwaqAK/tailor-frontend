@@ -54,15 +54,19 @@ export class AlterationFormComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly customerRequests = new Subject<string>();
   private readonly orderRequests = new Subject<string>();
+  private orderCursor: string | null = null;
+  private customerSearchCursor: string | null = null;
   private allowNavigation = false;
 
   readonly search = this.formBuilder.control('', { nonNullable: true });
   readonly searchResults = signal<readonly Customer[]>([]);
   readonly customer = signal<Customer | null>(null);
   readonly orders = signal<readonly OrderWithItems[]>([]);
+  readonly ordersHasNextPage = signal(false);
   readonly selectedOrder = signal<OrderWithItems | null>(null);
   readonly orderItems = signal<readonly OrderItem[]>([]);
   readonly loadingSearch = signal(false);
+  readonly searchHasNextPage = signal(false);
   readonly loadingOrders = signal(false);
   readonly loadingOrderDetails = signal(false);
   readonly ordersError = signal<string | null>(null);
@@ -88,7 +92,7 @@ export class AlterationFormComponent {
         switchMap((customerId) => {
           this.loadingOrders.set(true);
           this.ordersError.set(null);
-          return this.ordersApi.getByCustomer(customerId).pipe(
+          return this.ordersApi.getAll(undefined, 20, customerId).pipe(
             catchError((error: unknown) => {
               this.ordersError.set(this.errorMessage(error, 'Orders could not be loaded.'));
               return of(null);
@@ -101,9 +105,18 @@ export class AlterationFormComponent {
       .subscribe((response) => {
         if (!response) {
           this.orders.set([]);
+          this.ordersHasNextPage.set(false);
           return;
         }
-        this.orders.set(response.filter((result) => !this.isAlterationOrder(result.order)));
+        this.orders.set(
+          response.data.filter(
+            (result) =>
+              !this.isAlterationOrder(result.order) &&
+              result.items.some((item) => this.isEligibleItem(item)),
+          ),
+        );
+        this.orderCursor = response.meta.nextCursor;
+        this.ordersHasNextPage.set(response.meta.hasNextPage);
       });
 
     this.orderRequests
@@ -178,6 +191,38 @@ export class AlterationFormComponent {
     if (customerId) this.customerRequests.next(customerId);
   }
 
+  loadMoreOrders(): void {
+    const customerId = this.customer()?.customerId;
+    if (!customerId || !this.orderCursor || !this.ordersHasNextPage() || this.loadingOrders())
+      return;
+    this.loadingOrders.set(true);
+    this.ordersError.set(null);
+    this.ordersApi
+      .getAll(this.orderCursor, 20, customerId)
+      .pipe(
+        finalize(() => this.loadingOrders.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          const eligible = response.data.filter(
+            (result) =>
+              !this.isAlterationOrder(result.order) &&
+              result.items.some((item) => this.isEligibleItem(item)),
+          );
+          this.orders.update((current) => [
+            ...new Map(
+              [...current, ...eligible].map((order) => [order.order.orderId, order]),
+            ).values(),
+          ]);
+          this.orderCursor = response.meta.nextCursor;
+          this.ordersHasNextPage.set(response.meta.hasNextPage);
+        },
+        error: (error: unknown) =>
+          this.ordersError.set(this.errorMessage(error, 'Orders could not be loaded.')),
+      });
+  }
+
   retryOrderDetails(): void {
     const orderId = this.form.controls.originalOrderId.value;
     if (orderId) this.orderRequests.next(orderId);
@@ -247,14 +292,19 @@ export class AlterationFormComponent {
     this.form.controls.originalOrderItemId.reset('');
     this.selectedOrder.set(null);
     this.orderItems.set([]);
+    this.orderCursor = null;
+    this.ordersHasNextPage.set(false);
   }
 
   private searchCustomers(value: string): void {
     const search = value.trim();
     if (search.length < 2 || this.customer()) {
       this.searchResults.set([]);
+      this.customerSearchCursor = null;
+      this.searchHasNextPage.set(false);
       return;
     }
+    this.customerSearchCursor = null;
     this.loadingSearch.set(true);
     this.customersApi
       .list({ limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
@@ -263,8 +313,47 @@ export class AlterationFormComponent {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => this.searchResults.set(response.data),
-        error: () => this.searchResults.set([]),
+        next: (response) => {
+          this.searchResults.set(response.data);
+          this.customerSearchCursor = response.meta.nextCursor;
+          this.searchHasNextPage.set(response.meta.hasNextPage);
+        },
+        error: () => {
+          this.searchResults.set([]);
+          this.searchHasNextPage.set(false);
+        },
+      });
+  }
+
+  loadMoreCustomers(): void {
+    const search = this.search.value.trim();
+    if (!search || !this.customerSearchCursor || !this.searchHasNextPage() || this.loadingSearch())
+      return;
+    this.loadingSearch.set(true);
+    this.customersApi
+      .list({
+        limit: 10,
+        cursor: this.customerSearchCursor,
+        search,
+        sortBy: 'name',
+        sortOrder: 'asc',
+        isActive: true,
+      })
+      .pipe(
+        finalize(() => this.loadingSearch.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.searchResults.update((current) => [
+            ...new Map(
+              [...current, ...response.data].map((customer) => [customer.customerId, customer]),
+            ).values(),
+          ]);
+          this.customerSearchCursor = response.meta.nextCursor;
+          this.searchHasNextPage.set(response.meta.hasNextPage);
+        },
+        error: () => this.searchHasNextPage.set(false),
       });
   }
 

@@ -1,0 +1,108 @@
+<div class="container-fluid px-0">
+  <nav aria-label="Breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/services">Services</a></li>
+      <li class="breadcrumb-item active" aria-current="page">
+        {{ editMode ? 'Edit service' : 'Create service' }}
+      </li>
+    </ol>
+  </nav>
+  <header class="mb-4">
+    <h1 class="h2 mb-1">{{ editMode ? 'Edit service' : 'Create service' }}</h1>
+    <p class="text-body-secondary mb-0">Maintain the service catalogue.</p>
+  </header>
+
+  @if (error(); as message) {
+    <div class="alert alert-danger" role="alert">{{ message }}</div>
+  }
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" role="status" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary"></span>
+        <p class="mt-3 mb-0">Loading service…</p>
+      </div>
+    </div>
+  } @else {
+    <form class="card border-0 shadow-sm" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="card-body p-3 p-md-4">
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="service-form-name">Name</label>
+            <input
+              id="service-form-name"
+              class="form-control"
+              formControlName="name"
+              maxlength="100"
+              [class.is-invalid]="form.controls.name.touched && form.controls.name.invalid"
+            />
+            @if (form.controls.name.touched && form.controls.name.invalid) {
+              <div class="invalid-feedback">Enter a non-empty name of 100 characters or fewer.</div>
+            }
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="service-form-category">Category</label>
+            <select
+              id="service-form-category"
+              class="form-select"
+              formControlName="category"
+              [class.is-invalid]="form.controls.category.touched && form.controls.category.invalid"
+            >
+              <option [ngValue]="null">Select category</option>
+              @for (category of categories; track category) {
+                <option [ngValue]="category">{{ label(category) }}</option>
+              }
+            </select>
+            @if (form.controls.category.touched && form.controls.category.invalid) {
+              <div class="invalid-feedback">Select a category.</div>
+            }
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="service-form-price">Price (INR)</label>
+            <input
+              id="service-form-price"
+              class="form-control"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="price"
+              [class.is-invalid]="form.controls.price.touched && form.controls.price.invalid"
+            />
+            @if (form.controls.price.touched && form.controls.price.invalid) {
+              <div class="invalid-feedback">
+                Enter a non-negative price with up to two decimal places.
+              </div>
+            }
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="service-form-description">Description</label>
+            <textarea
+              id="service-form-description"
+              class="form-control"
+              rows="4"
+              maxlength="2000"
+              formControlName="description"
+            ></textarea>
+          </div>
+          <div class="col-12 form-check ms-2">
+            <input
+              id="service-form-active"
+              class="form-check-input"
+              type="checkbox"
+              formControlName="isActive"
+            />
+            <label class="form-check-label" for="service-form-active">Active service</label>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer d-flex justify-content-end gap-2">
+        <button class="btn btn-outline-secondary" type="button" (click)="cancel()">Cancel</button>
+        <button class="btn btn-primary" type="submit" [disabled]="submitting()">
+          @if (submitting()) {
+            <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+          }
+          Save service
+        </button>
+      </div>
+    </form>
+  }
+</div>

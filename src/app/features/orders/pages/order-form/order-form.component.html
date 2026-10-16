@@ -58,6 +58,16 @@
                 </button>
               }
             </div>
+            @if (searchHasNextPage()) {
+              <button
+                class="btn btn-sm btn-outline-primary mt-2"
+                type="button"
+                [disabled]="searching()"
+                (click)="loadMoreCustomers()"
+              >
+                Load more customers
+              </button>
+            }
           }
         }
       </div>

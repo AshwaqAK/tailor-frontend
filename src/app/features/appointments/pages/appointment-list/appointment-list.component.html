@@ -128,6 +128,16 @@
                   </button>
                 }
               </div>
+              @if (customerSearchHasNextPage()) {
+                <button
+                  class="btn btn-sm btn-outline-primary mt-2"
+                  type="button"
+                  [disabled]="searchingCustomers()"
+                  (click)="loadMoreCustomers()"
+                >
+                  Load more customers
+                </button>
+              }
             }
             @if (createForm.controls.customerId.touched && createForm.controls.customerId.invalid) {
               <p class="invalid-selection mb-0 mt-2">Select a customer.</p>
