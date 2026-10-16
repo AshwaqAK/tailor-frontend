@@ -17,10 +17,10 @@ export class FabricsApiService {
 
   list(query: FabricQuery): Observable<FabricListResponse> {
     let params = new HttpParams()
-      .set('page', query.page)
       .set('limit', query.limit)
       .set('sortBy', query.sortBy)
       .set('sortOrder', query.sortOrder);
+    if (query.cursor) params = params.set('cursor', query.cursor);
     if (query.name) params = params.set('name', query.name);
     if (query.type) params = params.set('type', query.type);
     if (query.color) params = params.set('color', query.color);

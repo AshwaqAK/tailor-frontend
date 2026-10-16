@@ -1,3 +1,5 @@
+import type { CursorPage } from '@shared/models/pagination.model';
+
 export enum PaymentMethod {
   Cash = 'CASH',
   Upi = 'UPI',
@@ -42,7 +44,7 @@ export interface CreatePaymentRequest {
 export type PaymentSortField = 'paidAt' | 'amount' | 'status' | 'createdAt';
 
 export interface PaymentQuery {
-  readonly page?: number;
+  readonly cursor?: string;
   readonly limit?: number;
   readonly customerId?: string;
   readonly paymentMethod?: PaymentMethod;
@@ -53,12 +55,4 @@ export interface PaymentQuery {
   readonly sortOrder?: 'asc' | 'desc';
 }
 
-export interface PaginatedPayments {
-  readonly data: readonly Payment[];
-  readonly meta: {
-    readonly page: number;
-    readonly limit: number;
-    readonly total: number;
-    readonly totalPages: number;
-  };
-}
+export type PaginatedPayments = CursorPage<Payment>;

@@ -27,7 +27,7 @@ describe('AuditLogListComponent', () => {
       list: () =>
         of({
           data: [],
-          meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
+          meta: { limit: 20, hasNextPage: false, nextCursor: null },
         }),
     };
 
@@ -85,7 +85,7 @@ describe('AuditLogListComponent', () => {
             updatedAt: '2026-01-15T10:30:00.000Z',
           },
         ],
-        meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
+        meta: { limit: 20, hasNextPage: false, nextCursor: null },
       });
 
     component.retry();

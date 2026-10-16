@@ -26,10 +26,9 @@ import {
 } from '../../models/fabric.model';
 
 const EMPTY_META: FabricListResponse['meta'] = {
-  page: 1,
   limit: 20,
-  total: 0,
-  totalPages: 0,
+  hasNextPage: false,
+  nextCursor: null,
 };
 
 @Component({
@@ -45,6 +44,8 @@ export class FabricListComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private cursorHistory: readonly (string | undefined)[] = [undefined];
+  private cursorIndex = 0;
 
   readonly name = new FormControl('', {
     nonNullable: true,
@@ -54,6 +55,7 @@ export class FabricListComponent {
   readonly meta = signal<FabricListResponse['meta']>(EMPTY_META);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly currentPage = () => this.cursorIndex + 1;
 
   readonly types = Object.values(FabricType);
   readonly units = Object.values(QuantityUnit);
@@ -93,9 +95,21 @@ export class FabricListComponent {
   }
 
   page(page: number): void {
-    if (page > 0 && page <= this.meta().totalPages) {
-      this.navigate({ page });
-    }
+    void page;
+  }
+
+  nextPage(): void {
+    const cursor = this.meta().nextCursor;
+    if (this.loading() || !this.meta().hasNextPage || !cursor) return;
+    this.cursorHistory = [...this.cursorHistory.slice(0, this.cursorIndex + 1), cursor];
+    this.cursorIndex += 1;
+    this.load({ ...this.query(), cursor });
+  }
+
+  previousPage(): void {
+    if (this.loading() || this.cursorIndex === 0) return;
+    this.cursorIndex -= 1;
+    this.load({ ...this.query(), cursor: this.cursorHistory[this.cursorIndex] });
   }
 
   clear(): void {
@@ -119,6 +133,8 @@ export class FabricListComponent {
   }
 
   private navigate(queryParams: Record<string, string | number | null>): void {
+    this.cursorHistory = [undefined];
+    this.cursorIndex = 0;
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams,
@@ -154,15 +170,11 @@ export class FabricListComponent {
   private query(): FabricQuery {
     const p = this.route.snapshot.queryParamMap;
 
-    const int = (value: string | null, fallback: number) =>
-      Number.isInteger(Number(value)) && Number(value) > 0 ? Number(value) : fallback;
-
     const type = p.get('type') as FabricType | null;
     const unit = p.get('unit') as QuantityUnit | null;
     const status = p.get('isActive');
 
     return {
-      page: int(p.get('page'), 1),
       limit: 20,
       name: p.get('name')?.trim() || undefined,
       type: type && this.types.includes(type) ? type : undefined,

@@ -1,3 +1,5 @@
+import type { CursorPage, CursorPageMeta } from '@shared/models/pagination.model';
+
 export enum AuditActorType {
   User = 'USER',
   System = 'SYSTEM',
@@ -40,7 +42,7 @@ export interface AuditLog {
 }
 
 export interface AuditLogQuery {
-  readonly page?: number;
+  readonly cursor?: string;
   readonly limit?: number;
   readonly actorId?: string;
   readonly action?: AuditLogAction;
@@ -50,14 +52,6 @@ export interface AuditLogQuery {
   readonly toDate?: string;
 }
 
-export interface AuditLogListMeta {
-  readonly page: number;
-  readonly limit: number;
-  readonly total: number;
-  readonly totalPages: number;
-}
+export type AuditLogListMeta = CursorPageMeta;
 
-export interface AuditLogListResponse {
-  readonly data: readonly AuditLog[];
-  readonly meta: AuditLogListMeta;
-}
+export type AuditLogListResponse = CursorPage<AuditLog>;

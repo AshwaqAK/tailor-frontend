@@ -34,7 +34,7 @@ describe('AuditLogsApiService', () => {
     let response: AuditLogListResponse | undefined;
     service
       .list({
-        page: 2,
+        cursor: 'opaque-token',
         limit: 100,
         actorId: 'USR-000001',
         action: AuditLogAction.Updated,
@@ -46,14 +46,14 @@ describe('AuditLogsApiService', () => {
       .subscribe((value) => (response = value));
 
     const request = http.expectOne(
-      '/api/v1/audit-logs?page=2&limit=100&actorId=USR-000001&action=UPDATED&entityType=ORDER&entityId=ORD-000001_item-1&fromDate=2026-01-01&toDate=2026-01-31T23:59:59.999Z',
+      '/api/v1/audit-logs?limit=100&cursor=opaque-token&actorId=USR-000001&action=UPDATED&entityType=ORDER&entityId=ORD-000001_item-1&fromDate=2026-01-01&toDate=2026-01-31T23:59:59.999Z',
     );
     expect(request.request.method).toBe('GET');
 
     const auditLog = createAuditLog();
     const page: AuditLogListResponse = {
       data: [auditLog],
-      meta: { page: 2, limit: 100, total: 101, totalPages: 2 },
+      meta: { limit: 100, hasNextPage: true, nextCursor: 'next-token' },
     };
     request.flush({ success: true, data: page });
 
@@ -64,7 +64,6 @@ describe('AuditLogsApiService', () => {
   it('omits unset and empty query parameters', () => {
     service
       .list({
-        page: 1,
         limit: 20,
         actorId: '',
         entityId: ' ',
@@ -73,11 +72,11 @@ describe('AuditLogsApiService', () => {
       })
       .subscribe();
 
-    const request = http.expectOne('/api/v1/audit-logs?page=1&limit=20');
-    expect(request.request.urlWithParams).toBe('/api/v1/audit-logs?page=1&limit=20');
+    const request = http.expectOne('/api/v1/audit-logs?limit=20');
+    expect(request.request.urlWithParams).toBe('/api/v1/audit-logs?limit=20');
     request.flush({
       success: true,
-      data: { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } },
+      data: { data: [], meta: { limit: 20, hasNextPage: false, nextCursor: null } },
     });
   });
 

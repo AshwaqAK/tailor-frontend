@@ -52,7 +52,6 @@ describe('AlterationListComponent', () => {
     component.applyFilters();
 
     expect(list).toHaveBeenLastCalledWith({
-      page: 1,
       limit: 20,
       customerId: 'CUS-000001',
       orderId: 'ORD-000002',
@@ -63,21 +62,20 @@ describe('AlterationListComponent', () => {
   });
 
   it('uses backend pagination and resets page when sorting changes', async () => {
-    const list = vi.fn(() => of(pageOf([], { page: 1, total: 45, totalPages: 3 })));
+    const list = vi.fn(() => of(pageOf([], { hasNextPage: true, nextCursor: 'opaque-token' })));
     await configure(list);
 
     const component = TestBed.createComponent(AlterationListComponent).componentInstance;
-    component.goToPage(2);
+    component.nextPage();
     expect(list).toHaveBeenLastCalledWith({
-      page: 2,
       limit: 20,
+      cursor: 'opaque-token',
       sortBy: 'createdAt',
       sortOrder: 'desc',
     });
 
     component.sortBy('status');
     expect(list).toHaveBeenLastCalledWith({
-      page: 1,
       limit: 20,
       sortBy: 'status',
       sortOrder: 'asc',
@@ -143,7 +141,7 @@ function pageOf(
 ): AlterationListResponse {
   return {
     data,
-    meta: { page: 1, limit: 20, total: data.length, totalPages: data.length ? 1 : 0, ...overrides },
+    meta: { limit: 20, hasNextPage: false, nextCursor: null, ...overrides },
   };
 }
 

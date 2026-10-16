@@ -91,7 +91,7 @@ describe('AlterationBillComponent', () => {
       .mockReturnValueOnce(of(createBillOrder()))
       .mockReturnValueOnce(of(updatedBill));
     const getByOrderPayments = vi.fn(() =>
-      of({ data: [payment], meta: { page: 1, limit: 100, total: 1, totalPages: 1 } }),
+      of({ data: [payment], meta: { limit: 100, hasNextPage: false, nextCursor: null } }),
     );
     const createPaymentRequest = vi.fn(() => of(payment));
     await configure(
@@ -221,7 +221,7 @@ async function configure(
 }
 
 function emptyPayments() {
-  return { data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 0 } };
+  return { data: [], meta: { limit: 100, hasNextPage: false, nextCursor: null } };
 }
 
 function createPayment(): Payment {

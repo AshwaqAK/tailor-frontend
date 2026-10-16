@@ -23,10 +23,9 @@ const ENTITY_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/;
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 const EMPTY_META: AuditLogListMeta = {
-  page: 1,
   limit: PAGE_LIMIT,
-  total: 0,
-  totalPages: 0,
+  hasNextPage: false,
+  nextCursor: null,
 };
 
 type LoadResult = { readonly response: AuditLogListResponse } | { readonly error: unknown };
@@ -94,6 +93,8 @@ export class AuditLogListComponent {
   private readonly api = inject(AuditLogsApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly loadRequests = new Subject<AuditLogQuery>();
+  private cursorHistory: readonly (string | undefined)[] = [undefined];
+  private cursorIndex = 0;
 
   readonly filterForm = this.formBuilder.nonNullable.group(
     {
@@ -112,8 +113,9 @@ export class AuditLogListComponent {
   readonly error = signal<string | null>(null);
   readonly actions = Object.values(AuditLogAction);
   readonly entityTypes = Object.values(AuditLogEntityType);
+  readonly currentPage = () => this.cursorIndex + 1;
 
-  private lastQuery: AuditLogQuery = { page: 1, limit: PAGE_LIMIT };
+  private lastQuery: AuditLogQuery = { limit: PAGE_LIMIT };
 
   constructor() {
     this.loadRequests
@@ -145,30 +147,37 @@ export class AuditLogListComponent {
         this.meta.set(result.response.meta);
       });
 
-    this.load(this.currentQuery(1));
+    this.load(this.currentQuery());
   }
 
   applyFilters(): void {
     this.filterForm.markAllAsTouched();
     if (this.filterForm.invalid) return;
 
-    this.load(this.currentQuery(1));
+    this.load(this.currentQuery());
   }
 
   clearFilters(): void {
     this.filterForm.reset();
-    this.load(this.currentQuery(1));
+    this.load(this.currentQuery());
   }
 
   retry(): void {
     this.loadRequests.next(this.lastQuery);
   }
 
-  changePage(page: number): void {
-    const totalPages = this.meta().totalPages;
-    if (this.loading() || page < 1 || page > totalPages || page === this.meta().page) return;
+  nextPage(): void {
+    const cursor = this.meta().nextCursor;
+    if (this.loading() || !this.meta().hasNextPage || !cursor) return;
+    this.cursorHistory = [...this.cursorHistory.slice(0, this.cursorIndex + 1), cursor];
+    this.cursorIndex += 1;
+    this.load({ ...this.currentQuery(), cursor });
+  }
 
-    this.load(this.currentQuery(page));
+  previousPage(): void {
+    if (this.loading() || this.cursorIndex === 0) return;
+    this.cursorIndex -= 1;
+    this.load({ ...this.currentQuery(), cursor: this.cursorHistory[this.cursorIndex] });
   }
 
   label(value: string): string {
@@ -180,15 +189,18 @@ export class AuditLogListComponent {
   }
 
   private load(query: AuditLogQuery): void {
+    if (!query.cursor) {
+      this.cursorHistory = [undefined];
+      this.cursorIndex = 0;
+    }
     this.loadRequests.next(query);
   }
 
-  private currentQuery(page: number): AuditLogQuery {
+  private currentQuery(): AuditLogQuery {
     const { actorId, action, entityType, entityId, fromDate, toDate } =
       this.filterForm.getRawValue();
 
     return {
-      page,
       limit: PAGE_LIMIT,
       ...(actorId.trim() ? { actorId: actorId.trim() } : {}),
       ...(action ? { action: action as AuditLogAction } : {}),

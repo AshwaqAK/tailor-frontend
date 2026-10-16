@@ -27,12 +27,11 @@ import {
 } from '../../models/alteration.model';
 
 const DEFAULT_QUERY: AlterationQuery = {
-  page: 1,
   limit: 20,
   sortBy: 'createdAt',
   sortOrder: 'desc',
 };
-const DEFAULT_META: AlterationListMeta = { page: 1, limit: 20, total: 0, totalPages: 0 };
+const DEFAULT_META: AlterationListMeta = { limit: 20, hasNextPage: false, nextCursor: null };
 const PAGE_SIZES = [10, 20, 50, 100] as const;
 
 function businessIdValidator(prefix: 'CUS' | 'ORD') {
@@ -59,6 +58,8 @@ export class AlterationListComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly loadRequests = new Subject<AlterationQuery>();
   private requestVersion = 0;
+  private cursorHistory: readonly (string | undefined)[] = [undefined];
+  private cursorIndex = 0;
 
   readonly filterForm = this.formBuilder.nonNullable.group({
     customerId: ['', businessIdValidator('CUS')],
@@ -115,7 +116,7 @@ export class AlterationListComponent {
   applyFilters(): void {
     this.filterForm.markAllAsTouched();
     if (this.filterForm.invalid) return;
-    this.load(this.queryFromForm(1));
+    this.load(this.queryFromForm());
   }
 
   clearFilters(): void {
@@ -136,32 +137,31 @@ export class AlterationListComponent {
 
   sortBy(field: AlterationSortField): void {
     const current = this.currentQuery();
+    const withoutCursor = { ...current };
+    delete withoutCursor.cursor;
     const sortOrder: AlterationSortOrder =
       current.sortBy === field && current.sortOrder === 'asc' ? 'desc' : 'asc';
     this.filterForm.controls.sortBy.setValue(field);
     this.filterForm.controls.sortOrder.setValue(sortOrder);
-    this.load({ ...current, page: 1, sortBy: field, sortOrder });
+    this.load({ ...withoutCursor, sortBy: field, sortOrder });
   }
 
-  goToPage(page: number): void {
-    const totalPages = this.meta().totalPages;
-    if (page < 1 || page > totalPages || page === this.meta().page) return;
-    this.load({ ...this.currentQuery(), page });
+  nextPage(): void {
+    const cursor = this.meta().nextCursor;
+    if (this.loading() || !this.meta().hasNextPage || !cursor) return;
+    this.cursorHistory = [...this.cursorHistory.slice(0, this.cursorIndex + 1), cursor];
+    this.cursorIndex += 1;
+    this.load({ ...this.currentQuery(), cursor }, false);
   }
 
-  pageNumbers(): readonly number[] {
-    const total = this.meta().totalPages;
-    const current = this.meta().page;
-    const start = Math.max(1, Math.min(current - 2, total - 4));
-    return Array.from({ length: Math.min(5, total) }, (_, index) => start + index);
+  previousPage(): void {
+    if (this.loading() || this.cursorIndex === 0) return;
+    this.cursorIndex -= 1;
+    this.load({ ...this.currentQuery(), cursor: this.cursorHistory[this.cursorIndex] }, false);
   }
 
-  firstResult(): number {
-    return this.meta().total === 0 ? 0 : (this.meta().page - 1) * this.meta().limit + 1;
-  }
-
-  lastResult(): number {
-    return Math.min(this.meta().page * this.meta().limit, this.meta().total);
+  currentPage(): number {
+    return this.cursorIndex + 1;
   }
 
   statusLabel(value: string): string {
@@ -178,16 +178,19 @@ export class AlterationListComponent {
     return query.sortOrder === 'asc' ? 'ascending' : 'descending';
   }
 
-  private load(query: AlterationQuery): void {
-    const normalizedQuery = { ...query, page: query.page ?? 1, limit: query.limit ?? 20 };
+  private load(query: AlterationQuery, reset = true): void {
+    if (reset) {
+      this.cursorHistory = [undefined];
+      this.cursorIndex = 0;
+    }
+    const normalizedQuery = { ...query, limit: query.limit ?? 20 };
     this.currentQuery.set(normalizedQuery);
     this.loadRequests.next(normalizedQuery);
   }
 
-  private queryFromForm(page: number): AlterationQuery {
+  private queryFromForm(): AlterationQuery {
     const values = this.filterForm.getRawValue();
     return {
-      page,
       limit: Math.min(100, Math.max(1, values.limit)),
       ...(values.customerId.trim() ? { customerId: values.customerId.trim() } : {}),
       ...(values.orderId.trim() ? { orderId: values.orderId.trim() } : {}),

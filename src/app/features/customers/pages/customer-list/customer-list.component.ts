@@ -38,7 +38,7 @@ import type {
   SortOrder,
 } from '../../models/customer.model';
 
-const DEFAULT_META: CustomerListMeta = { page: 1, limit: 20, total: 0, totalPages: 0 };
+const DEFAULT_META: CustomerListMeta = { limit: 20, hasNextPage: false, nextCursor: null };
 
 @Component({
   selector: 'app-customer-list',
@@ -55,6 +55,8 @@ export class CustomerListComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly retryRequest = new Subject<void>();
   private feedbackTimeout?: ReturnType<typeof setTimeout>;
+  private cursorHistory: readonly (string | undefined)[] = [undefined];
+  private cursorIndex = 0;
 
   readonly deactivateDialog = viewChild<ElementRef<HTMLDialogElement>>('deactivateDialog');
 
@@ -76,12 +78,7 @@ export class CustomerListComponent {
     const role = this.auth.user()?.role;
     return role === Role.SuperAdmin || role === Role.Manager;
   });
-  readonly firstResult = computed(() =>
-    this.meta().total === 0 ? 0 : (this.meta().page - 1) * this.meta().limit + 1,
-  );
-  readonly lastResult = computed(() =>
-    Math.min(this.meta().page * this.meta().limit, this.meta().total),
-  );
+  readonly currentPage = computed(() => this.cursorIndex + 1);
 
   constructor() {
     if (this.feedback()) this.scheduleFeedbackDismissal();
@@ -93,6 +90,8 @@ export class CustomerListComponent {
         (previous, current) => JSON.stringify(previous) === JSON.stringify(current),
       ),
       tap((query) => {
+        this.cursorHistory = [undefined];
+        this.cursorIndex = 0;
         this.currentQuery.set(query);
         this.searchControl.setValue(query.search ?? '', { emitEvent: false });
       }),
@@ -105,7 +104,7 @@ export class CustomerListComponent {
           this.error.set(null);
         }),
         switchMap(([query]) =>
-          this.api.list(query).pipe(
+          this.api.list({ ...query, cursor: undefined }).pipe(
             catchError((error: unknown) => {
               this.customers.set([]);
               this.meta.set(DEFAULT_META);
@@ -125,7 +124,7 @@ export class CustomerListComponent {
 
     this.searchControl.valueChanges
       .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe((search) => this.updateQuery({ search: search.trim() || null, page: 1 }));
+      .subscribe((search) => this.updateQuery({ search: search.trim() || null }));
   }
 
   retry(): void {
@@ -141,36 +140,37 @@ export class CustomerListComponent {
   }
 
   setStatus(value: string): void {
-    this.updateQuery({ isActive: value || null, page: 1 });
+    this.updateQuery({ isActive: value || null });
   }
 
   setLimit(value: string): void {
-    this.updateQuery({ limit: Number(value), page: 1 });
+    this.updateQuery({ limit: Number(value) });
   }
 
   sortBy(field: CustomerSortField): void {
     const current = this.currentQuery();
     const sortOrder: SortOrder =
       current.sortBy === field && current.sortOrder === 'asc' ? 'desc' : 'asc';
-    this.updateQuery({ sortBy: field, sortOrder, page: 1 });
+    this.updateQuery({ sortBy: field, sortOrder });
   }
 
-  goToPage(page: number): void {
-    if (page < 1 || page > this.meta().totalPages || page === this.meta().page) return;
-    this.updateQuery({ page });
+  nextPage(): void {
+    const cursor = this.meta().nextCursor;
+    if (this.loading() || !this.meta().hasNextPage || !cursor) return;
+    this.cursorHistory = [...this.cursorHistory.slice(0, this.cursorIndex + 1), cursor];
+    this.cursorIndex += 1;
+    this.loadCursor({ ...this.currentQuery(), cursor });
   }
 
-  pageNumbers(): readonly number[] {
-    const total = this.meta().totalPages;
-    const current = this.meta().page;
-    const start = Math.max(1, Math.min(current - 2, total - 4));
-    return Array.from({ length: Math.min(5, total) }, (_, index) => start + index);
+  previousPage(): void {
+    if (this.loading() || this.cursorIndex === 0) return;
+    this.cursorIndex -= 1;
+    this.loadCursor({ ...this.currentQuery(), cursor: this.cursorHistory[this.cursorIndex] });
   }
 
   customerQueryParams(): Record<string, string | number> {
     const query = this.currentQuery();
     const params: Record<string, string | number> = {
-      page: query.page,
       limit: query.limit,
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
@@ -262,6 +262,27 @@ export class CustomerListComponent {
     return query.sortOrder === 'asc' ? 'ascending' : 'descending';
   }
 
+  private loadCursor(query: CustomerQuery): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.api
+      .list(query)
+      .pipe(
+        finalize(() => this.loading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.customers.set(response.data);
+          this.meta.set(response.meta);
+        },
+        error: (error: unknown) => {
+          this.customers.set([]);
+          this.error.set(this.errorMessage(error));
+        },
+      });
+  }
+
   private updateQuery(queryParams: Record<string, string | number | null>): void {
     void this.router.navigate([], {
       relativeTo: this.route,
@@ -272,7 +293,6 @@ export class CustomerListComponent {
 
   private readQuery(): CustomerQuery {
     const params = this.route.snapshot.queryParamMap;
-    const page = this.positiveInteger(params.get('page'), 1);
     const limitCandidate = this.positiveInteger(params.get('limit'), 20);
     const limit = Math.min(limitCandidate, 100);
     const sortFields: readonly CustomerSortField[] = ['name', 'phone', 'customerId', 'createdAt'];
@@ -283,7 +303,7 @@ export class CustomerListComponent {
     const status = params.get('isActive');
     const isActive = status === 'true' ? true : status === 'false' ? false : undefined;
     const search = params.get('search')?.trim().slice(0, 100) || undefined;
-    return { page, limit, search, sortBy, sortOrder, isActive };
+    return { limit, search, sortBy, sortOrder, isActive };
   }
 
   private positiveInteger(value: string | null, fallback: number): number {

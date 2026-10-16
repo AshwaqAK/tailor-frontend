@@ -451,25 +451,23 @@
         }
       </div>
 
-      @if (meta().totalPages > 1) {
+      @if (appointments().length || currentQuery().cursor) {
         <footer class="d-flex justify-content-between align-items-center gap-3 border-top p-3">
-          <span class="small text-body-secondary"
-            >Page {{ meta().page }} of {{ meta().totalPages }}</span
-          >
+          <span class="small text-body-secondary">Page {{ currentPage() }}</span>
           <div class="d-flex gap-2">
             <button
               class="btn btn-sm btn-outline-secondary"
               type="button"
-              [disabled]="meta().page === 1"
-              (click)="goToPage(meta().page - 1)"
+              [disabled]="loading() || !currentQuery().cursor"
+              (click)="previousPage()"
             >
               Previous
             </button>
             <button
               class="btn btn-sm btn-outline-primary"
               type="button"
-              [disabled]="meta().page === meta().totalPages"
-              (click)="goToPage(meta().page + 1)"
+              [disabled]="loading() || !meta().hasNextPage || !meta().nextCursor"
+              (click)="nextPage()"
             >
               Next
             </button>

@@ -38,10 +38,9 @@ type AppointmentAction =
   | { readonly kind: 'delete'; readonly appointment: Appointment };
 
 const EMPTY_META: PaginatedAppointments['meta'] = {
-  page: 1,
   limit: 20,
-  total: 0,
-  totalPages: 0,
+  hasNextPage: false,
+  nextCursor: null,
 };
 
 const APPOINTMENT_STATUS_TRANSITIONS: Readonly<
@@ -75,12 +74,14 @@ export class AppointmentListComponent {
   private readonly ordersApi = inject(OrdersApiService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private cursorHistory: readonly (string | undefined)[] = [undefined];
+  private cursorIndex = 0;
 
   readonly actionDialog = viewChild<ElementRef<HTMLDialogElement>>('actionDialog');
 
   readonly appointments = signal<readonly Appointment[]>([]);
   readonly meta = signal<PaginatedAppointments['meta']>(EMPTY_META);
-  readonly currentQuery = signal<AppointmentQuery>({ page: 1, limit: EMPTY_META.limit });
+  readonly currentQuery = signal<AppointmentQuery>({ limit: EMPTY_META.limit });
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly createFormOpen = signal(false);
@@ -100,6 +101,7 @@ export class AppointmentListComponent {
   readonly ordersError = signal<string | null>(null);
   readonly appointmentTypes = Object.values(AppointmentType);
   readonly appointmentStatuses = Object.values(AppointmentStatus);
+  readonly currentPage = () => this.cursorIndex + 1;
   readonly canCreate = computed(() => {
     const role = this.auth.user()?.role;
     return role === Role.SuperAdmin || role === Role.Manager || role === Role.Receptionist;
@@ -141,8 +143,8 @@ export class AppointmentListComponent {
       .subscribe((value) => this.searchCustomers(value));
   }
 
-  load(page = this.currentQuery().page ?? 1): void {
-    const query = { ...this.currentQuery(), page, limit: EMPTY_META.limit };
+  load(cursor?: string): void {
+    const query = { ...this.currentQuery(), cursor, limit: EMPTY_META.limit };
     this.currentQuery.set(query);
     this.loading.set(true);
     this.error.set(null);
@@ -167,9 +169,18 @@ export class AppointmentListComponent {
       });
   }
 
-  goToPage(page: number): void {
-    if (page < 1 || page > this.meta().totalPages || page === this.meta().page) return;
-    this.load(page);
+  nextPage(): void {
+    const cursor = this.meta().nextCursor;
+    if (this.loading() || !this.meta().hasNextPage || !cursor) return;
+    this.cursorHistory = [...this.cursorHistory.slice(0, this.cursorIndex + 1), cursor];
+    this.cursorIndex += 1;
+    this.load(cursor);
+  }
+
+  previousPage(): void {
+    if (this.loading() || this.cursorIndex === 0) return;
+    this.cursorIndex -= 1;
+    this.load(this.cursorHistory[this.cursorIndex]);
   }
 
   applyFilters(): void {
@@ -180,7 +191,6 @@ export class AppointmentListComponent {
 
     const { customerId, appointmentDate, status } = this.filterForm.getRawValue();
     this.currentQuery.set({
-      page: 1,
       limit: EMPTY_META.limit,
       ...(customerId.trim() ? { customerId: customerId.trim() } : {}),
       ...(appointmentDate
@@ -188,12 +198,16 @@ export class AppointmentListComponent {
         : {}),
       ...(status ? { status } : {}),
     });
+    this.cursorHistory = [undefined];
+    this.cursorIndex = 0;
     this.load();
   }
 
   clearFilters(): void {
     this.filterForm.reset();
-    this.currentQuery.set({ page: 1, limit: EMPTY_META.limit });
+    this.currentQuery.set({ limit: EMPTY_META.limit });
+    this.cursorHistory = [undefined];
+    this.cursorIndex = 0;
     this.load();
   }
 
@@ -444,7 +458,7 @@ export class AppointmentListComponent {
 
     this.searchingCustomers.set(true);
     this.customersApi
-      .list({ page: 1, limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
+      .list({ limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
       .pipe(
         finalize(() => this.searchingCustomers.set(false)),
         takeUntilDestroyed(this.destroyRef),

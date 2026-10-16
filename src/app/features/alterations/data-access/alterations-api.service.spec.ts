@@ -33,7 +33,7 @@ describe('AlterationsApiService', () => {
     let response: AlterationListResponse | undefined;
     service
       .list({
-        page: 2,
+        cursor: 'opaque-token',
         limit: 100,
         customerId: 'CUS-000001',
         orderId: 'ORD-000002',
@@ -44,13 +44,13 @@ describe('AlterationsApiService', () => {
       .subscribe((value) => (response = value));
 
     const request = http.expectOne(
-      '/api/v1/alterations?page=2&limit=100&customerId=CUS-000001&orderId=ORD-000002&status=IN_PROGRESS&sortBy=requestDate&sortOrder=desc',
+      '/api/v1/alterations?limit=100&cursor=opaque-token&customerId=CUS-000001&orderId=ORD-000002&status=IN_PROGRESS&sortBy=requestDate&sortOrder=desc',
     );
     expect(request.request.method).toBe('GET');
 
     const page: AlterationListResponse = {
       data: [createAlteration()],
-      meta: { page: 2, limit: 100, total: 101, totalPages: 2 },
+      meta: { limit: 100, hasNextPage: true, nextCursor: 'next-token' },
     };
     request.flush({ success: true, data: page });
 
@@ -58,14 +58,12 @@ describe('AlterationsApiService', () => {
   });
 
   it('omits unset and empty query parameters', () => {
-    service
-      .list({ page: 1, limit: 20, customerId: '', orderId: ' ', sortBy: undefined })
-      .subscribe();
+    service.list({ limit: 20, customerId: '', orderId: ' ', sortBy: undefined }).subscribe();
 
-    const request = http.expectOne('/api/v1/alterations?page=1&limit=20');
+    const request = http.expectOne('/api/v1/alterations?limit=20');
     request.flush({
       success: true,
-      data: { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } },
+      data: { data: [], meta: { limit: 20, hasNextPage: false, nextCursor: null } },
     });
   });
 

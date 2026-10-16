@@ -1,3 +1,5 @@
+import type { CursorPage } from '@shared/models/pagination.model';
+
 export enum AppointmentType {
   Consultation = 'CONSULTATION',
   Measurement = 'MEASUREMENT',
@@ -52,7 +54,7 @@ export interface UpdateAppointmentRequest {
 export type AppointmentSortField = 'appointmentDate' | 'appointmentTime' | 'status' | 'createdAt';
 
 export interface AppointmentQuery {
-  readonly page?: number;
+  readonly cursor?: string;
   readonly limit?: number;
   readonly customerId?: string;
   readonly orderId?: string;
@@ -63,12 +65,4 @@ export interface AppointmentQuery {
   readonly sortOrder?: 'asc' | 'desc';
 }
 
-export interface PaginatedAppointments {
-  readonly data: readonly Appointment[];
-  readonly meta: {
-    readonly page: number;
-    readonly limit: number;
-    readonly total: number;
-    readonly totalPages: number;
-  };
-}
+export type PaginatedAppointments = CursorPage<Appointment>;

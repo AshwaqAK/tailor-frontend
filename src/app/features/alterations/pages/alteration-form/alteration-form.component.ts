@@ -257,7 +257,7 @@ export class AlterationFormComponent {
     }
     this.loadingSearch.set(true);
     this.customersApi
-      .list({ page: 1, limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
+      .list({ limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
       .pipe(
         finalize(() => this.loadingSearch.set(false)),
         takeUntilDestroyed(this.destroyRef),

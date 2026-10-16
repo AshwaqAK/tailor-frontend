@@ -243,47 +243,25 @@
       <footer
         class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 border-top p-3"
       >
-        <p class="text-body-secondary small mb-0">
-          Showing {{ firstResult() }}–{{ lastResult() }} of {{ meta().total }}
-        </p>
-        @if (meta().totalPages > 1) {
-          <nav aria-label="Customer result pages">
-            <ul class="pagination mb-0">
-              <li class="page-item" [class.disabled]="meta().page === 1">
-                <button
-                  class="page-link"
-                  type="button"
-                  [disabled]="meta().page === 1"
-                  (click)="goToPage(meta().page - 1)"
-                >
-                  Previous
-                </button>
-              </li>
-              @for (page of pageNumbers(); track page) {
-                <li class="page-item" [class.active]="page === meta().page">
-                  <button
-                    class="page-link"
-                    type="button"
-                    [attr.aria-current]="page === meta().page ? 'page' : null"
-                    (click)="goToPage(page)"
-                  >
-                    {{ page }}
-                  </button>
-                </li>
-              }
-              <li class="page-item" [class.disabled]="meta().page === meta().totalPages">
-                <button
-                  class="page-link"
-                  type="button"
-                  [disabled]="meta().page === meta().totalPages"
-                  (click)="goToPage(meta().page + 1)"
-                >
-                  Next
-                </button>
-              </li>
-            </ul>
-          </nav>
-        }
+        <span class="text-body-secondary small">Page {{ currentPage() }}</span>
+        <div class="btn-group">
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            [disabled]="loading() || currentPage() === 1"
+            (click)="previousPage()"
+          >
+            Previous
+          </button>
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            [disabled]="loading() || !meta().hasNextPage || !meta().nextCursor"
+            (click)="nextPage()"
+          >
+            Next
+          </button>
+        </div>
       </footer>
     </section>
   }
