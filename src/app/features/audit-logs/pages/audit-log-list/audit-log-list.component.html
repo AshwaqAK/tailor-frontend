@@ -1,0 +1,243 @@
+<div class="container-fluid px-0">
+  <header class="mb-4">
+    <p class="text-uppercase text-primary fw-semibold small mb-1">Administration</p>
+    <h1 class="h2 mb-1">Audit Logs</h1>
+    <p class="text-body-secondary mb-0">Review recorded changes and business events.</p>
+  </header>
+
+  <form
+    class="card border-0 shadow-sm mb-4"
+    [formGroup]="filterForm"
+    (ngSubmit)="applyFilters()"
+    [attr.aria-busy]="loading()"
+    novalidate
+  >
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-6 col-xl-3">
+          <label class="form-label" for="audit-log-actor-id">Actor ID</label>
+          <input
+            id="audit-log-actor-id"
+            class="form-control"
+            [class.is-invalid]="
+              filterForm.controls.actorId.touched && filterForm.controls.actorId.invalid
+            "
+            type="text"
+            formControlName="actorId"
+            placeholder="USR-000001"
+            autocomplete="off"
+          />
+          @if (
+            filterForm.controls.actorId.touched &&
+            filterForm.controls.actorId.hasError('invalidActorId')
+          ) {
+            <div class="invalid-feedback">Use an actor ID such as USR-000001.</div>
+          }
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2">
+          <label class="form-label" for="audit-log-action">Action</label>
+          <select id="audit-log-action" class="form-select" formControlName="action">
+            <option value="">All actions</option>
+            @for (action of actions; track action) {
+              <option [value]="action">{{ label(action) }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2">
+          <label class="form-label" for="audit-log-entity-type">Entity type</label>
+          <select id="audit-log-entity-type" class="form-select" formControlName="entityType">
+            <option value="">All entity types</option>
+            @for (entityType of entityTypes; track entityType) {
+              <option [value]="entityType">{{ label(entityType) }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <label class="form-label" for="audit-log-entity-id">Entity ID</label>
+          <input
+            id="audit-log-entity-id"
+            class="form-control"
+            [class.is-invalid]="
+              filterForm.controls.entityId.touched && filterForm.controls.entityId.invalid
+            "
+            type="text"
+            formControlName="entityId"
+            autocomplete="off"
+          />
+          @if (
+            filterForm.controls.entityId.touched &&
+            filterForm.controls.entityId.hasError('invalidEntityId')
+          ) {
+            <div class="invalid-feedback">Use 1–100 letters, numbers, underscores, or hyphens.</div>
+          }
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2 d-grid">
+          <button class="btn btn-primary" type="submit" [disabled]="loading()">
+            <i class="bi bi-funnel fs-6 me-1" aria-hidden="true"></i>
+            <span>{{ loading() ? 'Loading…' : 'Apply filters' }}</span>
+          </button>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2">
+          <label class="form-label" for="audit-log-from-date">From date</label>
+          <input
+            id="audit-log-from-date"
+            class="form-control"
+            [class.is-invalid]="
+              filterForm.controls.fromDate.touched &&
+              (filterForm.controls.fromDate.invalid || filterForm.hasError('dateRange'))
+            "
+            type="date"
+            formControlName="fromDate"
+          />
+          @if (
+            filterForm.controls.fromDate.touched &&
+            filterForm.controls.fromDate.hasError('invalidDate')
+          ) {
+            <div class="invalid-feedback">Enter a valid date.</div>
+          }
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2">
+          <label class="form-label" for="audit-log-to-date">To date</label>
+          <input
+            id="audit-log-to-date"
+            class="form-control"
+            [class.is-invalid]="
+              filterForm.controls.toDate.touched &&
+              (filterForm.controls.toDate.invalid || filterForm.hasError('dateRange'))
+            "
+            type="date"
+            formControlName="toDate"
+          />
+          @if (
+            filterForm.controls.toDate.touched && filterForm.controls.toDate.hasError('invalidDate')
+          ) {
+            <div class="invalid-feedback">Enter a valid date.</div>
+          } @else if (filterForm.hasError('dateRange')) {
+            <div class="invalid-feedback">To date must be on or after the from date.</div>
+          }
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-2 d-grid">
+          <button class="btn btn-outline-secondary" type="button" (click)="clearFilters()">
+            Clear filters
+          </button>
+        </div>
+      </div>
+      <p class="small text-body-secondary mb-0 mt-3">
+        Dates use the backend date boundary rules; a date-only end date is inclusive.
+      </p>
+    </div>
+  </form>
+
+  @if (error(); as message) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <button class="btn btn-sm btn-outline-danger" type="button" (click)="retry()">
+        <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+        <span>Try again</span>
+      </button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading audit logs…</p>
+      </div>
+    </div>
+  } @else if (!error() && auditLogs().length === 0) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <h2 class="h5">No audit events found</h2>
+        <p class="text-body-secondary mb-0">No events match the selected filters.</p>
+      </div>
+    </div>
+  } @else if (!error()) {
+    <section
+      class="card border-0 shadow-sm overflow-hidden"
+      aria-labelledby="audit-log-table-heading"
+    >
+      <h2 id="audit-log-table-heading" class="visually-hidden">Audit events</h2>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Event</th>
+              <th scope="col">Actor</th>
+              <th scope="col">Action</th>
+              <th scope="col">Entity</th>
+              <th scope="col">Entity ID</th>
+              <th scope="col">Audit ID</th>
+              <th scope="col">Metadata</th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (auditLog of auditLogs(); track auditLog.auditId) {
+              <tr>
+                <td>{{ auditLog.eventAt | date: 'medium' }}</td>
+                <td>{{ auditLog.actorId || 'System' }}</td>
+                <td>
+                  <span class="badge text-bg-primary">{{ label(auditLog.action) }}</span>
+                </td>
+                <td>
+                  <span class="badge text-bg-secondary">{{ label(auditLog.entityType) }}</span>
+                </td>
+                <td>
+                  <code>{{ auditLog.entityId }}</code>
+                </td>
+                <td>
+                  <code>{{ auditLog.auditId }}</code>
+                </td>
+                <td>{{ auditLog.metadata ? 'Available' : 'None' }}</td>
+                <td>
+                  <a
+                    class="btn btn-sm btn-outline-primary"
+                    [routerLink]="['/audit-logs', auditLog.auditId]"
+                  >
+                    View details
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer
+        class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-top p-3"
+      >
+        <span class="small text-body-secondary">
+          Page {{ meta().page }} of {{ meta().totalPages || 0 }} · {{ meta().total }} events
+        </span>
+        <div class="btn-group" aria-label="Audit log pagination">
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            [disabled]="loading() || meta().page <= 1 || meta().totalPages === 0"
+            (click)="changePage(meta().page - 1)"
+          >
+            Previous
+          </button>
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            [disabled]="loading() || meta().totalPages === 0 || meta().page >= meta().totalPages"
+            (click)="changePage(meta().page + 1)"
+          >
+            Next
+          </button>
+        </div>
+      </footer>
+    </section>
+  }
+</div>

@@ -1,0 +1,88 @@
+<div class="container-fluid px-0">
+  @if (loading()) {
+    <div class="card border-0 shadow-sm" aria-live="polite" aria-busy="true">
+      <div class="card-body text-center py-5">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <p class="text-body-secondary mt-3 mb-0">Loading audit log…</p>
+      </div>
+    </div>
+  } @else if (error(); as message) {
+    <div
+      class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-outline-secondary" routerLink="/audit-logs">Back to Audit Logs</a>
+        @if (message !== 'The audit log ID is invalid.') {
+          <button class="btn btn-sm btn-outline-danger" type="button" (click)="load()">
+            <i class="bi bi-arrow-clockwise fs-6 me-1" aria-hidden="true"></i>
+            <span>Try again</span>
+          </button>
+        }
+      </div>
+    </div>
+  } @else if (auditLog(); as current) {
+    <header
+      class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-start gap-3 mb-4"
+    >
+      <div>
+        <p class="text-uppercase text-primary fw-semibold small mb-1">Audit event</p>
+        <h1 class="h2 mb-1">{{ current.auditId }}</h1>
+        <p class="text-body-secondary mb-0">{{ current.eventAt | date: 'medium' }}</p>
+      </div>
+      <a class="btn btn-outline-secondary" routerLink="/audit-logs">
+        <i class="bi bi-arrow-left fs-6 me-1" aria-hidden="true"></i>
+        <span>Back to Audit Logs</span>
+      </a>
+    </header>
+
+    <div class="row g-4">
+      <div class="col-12 col-lg-8">
+        <section class="card border-0 shadow-sm h-100" aria-labelledby="audit-event-heading">
+          <div class="card-body p-3 p-md-4">
+            <h2 id="audit-event-heading" class="h5 mb-4">Event details</h2>
+            <dl class="row mb-0">
+              <dt class="col-sm-4">Audit ID</dt>
+              <dd class="col-sm-8">
+                <code>{{ current.auditId }}</code>
+              </dd>
+              <dt class="col-sm-4">Event timestamp</dt>
+              <dd class="col-sm-8">{{ current.eventAt | date: 'medium' }}</dd>
+              <dt class="col-sm-4">Actor</dt>
+              <dd class="col-sm-8">{{ actorLabel(current) }}</dd>
+              <dt class="col-sm-4">Action</dt>
+              <dd class="col-sm-8">
+                <span class="badge text-bg-primary">{{ label(current.action) }}</span>
+              </dd>
+              <dt class="col-sm-4">Entity type</dt>
+              <dd class="col-sm-8">
+                <span class="badge text-bg-secondary">{{ label(current.entityType) }}</span>
+              </dd>
+              <dt class="col-sm-4">Entity ID</dt>
+              <dd class="col-sm-8">
+                <code>{{ current.entityId }}</code>
+              </dd>
+            </dl>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <section class="card border-0 shadow-sm h-100" aria-labelledby="audit-record-heading">
+          <div class="card-body p-3 p-md-4">
+            <h2 id="audit-record-heading" class="h5 mb-4">Record details</h2>
+            <dl class="detail-list mb-0">
+              <dt>Created</dt>
+              <dd>{{ current.createdAt | date: 'medium' }}</dd>
+              <dt>Last updated</dt>
+              <dd>{{ current.updatedAt | date: 'medium' }}</dd>
+              <dt>Metadata</dt>
+              <dd class="text-body-secondary">{{ metadataMessage(current) }}</dd>
+            </dl>
+          </div>
+        </section>
+      </div>
+    </div>
+  }
+</div>

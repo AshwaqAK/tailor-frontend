@@ -21,6 +21,7 @@ export class AppShellComponent {
     const role = this.user()?.role;
     return role === Role.SuperAdmin || role === Role.Manager;
   });
+  readonly canViewAuditLogs = this.canViewReports;
   readonly sidebarOpen = signal(false);
   readonly signingOut = signal(false);
 
