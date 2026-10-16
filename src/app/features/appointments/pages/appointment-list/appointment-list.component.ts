@@ -96,6 +96,8 @@ export class AppointmentListComponent {
   readonly customerResults = signal<readonly Customer[]>([]);
   readonly selectedCustomer = signal<Customer | null>(null);
   readonly searchingCustomers = signal(false);
+  readonly customerSearchHasNextPage = signal(false);
+  private customerSearchCursor: string | null = null;
   readonly orders = signal<readonly OrderWithItems[]>([]);
   readonly loadingOrders = signal(false);
   readonly ordersError = signal<string | null>(null);
@@ -453,9 +455,12 @@ export class AppointmentListComponent {
     const search = value.trim();
     if (search.length < 2 || this.selectedCustomer()) {
       this.customerResults.set([]);
+      this.customerSearchCursor = null;
+      this.customerSearchHasNextPage.set(false);
       return;
     }
 
+    this.customerSearchCursor = null;
     this.searchingCustomers.set(true);
     this.customersApi
       .list({ limit: 10, search, sortBy: 'name', sortOrder: 'asc', isActive: true })
@@ -464,8 +469,52 @@ export class AppointmentListComponent {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => this.customerResults.set(response.data),
-        error: () => this.customerResults.set([]),
+        next: (response) => {
+          this.customerResults.set(response.data);
+          this.customerSearchCursor = response.meta.nextCursor;
+          this.customerSearchHasNextPage.set(response.meta.hasNextPage);
+        },
+        error: () => {
+          this.customerResults.set([]);
+          this.customerSearchHasNextPage.set(false);
+        },
+      });
+  }
+
+  loadMoreCustomers(): void {
+    const search = this.customerSearch.value.trim();
+    if (
+      !search ||
+      !this.customerSearchCursor ||
+      !this.customerSearchHasNextPage() ||
+      this.searchingCustomers()
+    )
+      return;
+    this.searchingCustomers.set(true);
+    this.customersApi
+      .list({
+        limit: 10,
+        cursor: this.customerSearchCursor,
+        search,
+        sortBy: 'name',
+        sortOrder: 'asc',
+        isActive: true,
+      })
+      .pipe(
+        finalize(() => this.searchingCustomers.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.customerResults.update((current) => [
+            ...new Map(
+              [...current, ...response.data].map((customer) => [customer.customerId, customer]),
+            ).values(),
+          ]);
+          this.customerSearchCursor = response.meta.nextCursor;
+          this.customerSearchHasNextPage.set(response.meta.hasNextPage);
+        },
+        error: () => this.customerSearchHasNextPage.set(false),
       });
   }
 

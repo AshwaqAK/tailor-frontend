@@ -28,6 +28,15 @@ describe('AppShellComponent alterations navigation', () => {
   });
 });
 
+describe('AppShellComponent services navigation', () => {
+  it('shows one Services navigation item for an authenticated user', async () => {
+    await configure(Role.Tailor);
+    const fixture = TestBed.createComponent(AppShellComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('a[routerlink="/services"]')).toHaveLength(1);
+  });
+});
+
 async function configure(role: Role | undefined): Promise<void> {
   const user = role
     ? ({

@@ -66,7 +66,13 @@ export class AlterationBillComponent {
   readonly notFound = signal(false);
   readonly invalidBill = signal(false);
   readonly payments = signal<readonly Payment[]>([]);
-  readonly paymentsLoading = signal(true);
+  readonly paymentMeta = signal({
+    limit: 20,
+    hasNextPage: false,
+    nextCursor: null as string | null,
+  });
+  readonly paymentPage = signal(1);
+  readonly paymentsLoading = signal(false);
   readonly paymentsError = signal<string | null>(null);
   readonly paymentFormOpen = signal(false);
   readonly paymentSubmitting = signal(false);
@@ -88,6 +94,7 @@ export class AlterationBillComponent {
     }),
     notes: new FormControl('', { nonNullable: true, validators: Validators.maxLength(1000) }),
   });
+  private paymentCursorHistory: readonly (string | undefined)[] = [undefined];
   readonly canCreatePayment = computed(() =>
     [Role.SuperAdmin, Role.Manager, Role.Receptionist].includes(this.auth.user()?.role as Role),
   );
@@ -146,22 +153,39 @@ export class AlterationBillComponent {
       });
   }
 
-  loadPayments(): void {
+  loadPayments(cursor?: string, page = 1): void {
+    if (this.paymentsLoading()) return;
     this.paymentsLoading.set(true);
     this.paymentsError.set(null);
     this.paymentsApi
-      .getByOrder(this.billingOrderId, { limit: 100 })
+      .getByOrder(this.billingOrderId, { limit: 20, ...(cursor ? { cursor } : {}) })
       .pipe(
         finalize(() => this.paymentsLoading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => this.payments.set(response.data),
+        next: (response) => {
+          this.payments.set(response.data);
+          this.paymentMeta.set(response.meta);
+          this.paymentPage.set(page);
+        },
         error: (error: unknown) =>
           this.paymentsError.set(
             error instanceof ApiError ? error.message : 'Payments could not be loaded.',
           ),
       });
+  }
+  nextPaymentPage(): void {
+    const meta = this.paymentMeta();
+    const page = this.paymentPage();
+    if (this.paymentsLoading() || !meta.hasNextPage || !meta.nextCursor) return;
+    this.paymentCursorHistory = [...this.paymentCursorHistory.slice(0, page + 1), meta.nextCursor];
+    this.loadPayments(meta.nextCursor, page + 1);
+  }
+  previousPaymentPage(): void {
+    const page = this.paymentPage();
+    if (this.paymentsLoading() || page <= 1) return;
+    this.loadPayments(this.paymentCursorHistory[page - 2], page - 1);
   }
 
   openPaymentForm(): void {
@@ -228,7 +252,7 @@ export class AlterationBillComponent {
     this.paymentRefreshError.set(null);
     forkJoin({
       bill: this.ordersApi.getByOrderId(this.billingOrderId),
-      payments: this.paymentsApi.getByOrder(this.billingOrderId, { limit: 100 }),
+      payments: this.paymentsApi.getByOrder(this.billingOrderId, { limit: 20 }),
     })
       .pipe(
         finalize(() => this.paymentDetailsRefreshing.set(false)),
@@ -238,6 +262,9 @@ export class AlterationBillComponent {
         next: ({ bill, payments }) => {
           this.bill.set(bill);
           this.payments.set(payments.data);
+          this.paymentMeta.set(payments.meta);
+          this.paymentPage.set(1);
+          this.paymentCursorHistory = [undefined];
         },
         error: (error: unknown) => {
           const message =
