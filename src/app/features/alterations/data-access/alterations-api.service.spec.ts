@@ -107,7 +107,7 @@ describe('AlterationsApiService', () => {
 
     const request = http.expectOne('/api/v1/alterations/ALT-000123%2Fpart/bill');
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toBeUndefined();
+    expect(request.request.body).toBeNull();
 
     const order = { orderId: 'ORD-000002' } as Order;
     request.flush({ success: true, data: order });

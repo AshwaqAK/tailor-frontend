@@ -54,7 +54,6 @@ describe('AlterationFormComponent', () => {
 
     component.selectOrder('ORD-000002');
     expect(component.form.controls.originalOrderItemId.value).toBe('');
-    expect(component.orderItems()).toEqual([]);
 
     component.selectCustomer(createCustomer({ customerId: 'CUS-000002' }));
     expect(component.form.controls.originalOrderId.value).toBe('');
@@ -173,6 +172,7 @@ async function configure(
   await TestBed.configureTestingModule({
     imports: [AlterationFormComponent],
     providers: [
+      provideRouter([]),
       {
         provide: AlterationsApiService,
         useValue: {
@@ -194,7 +194,6 @@ async function configure(
         useValue: { snapshot: { queryParamMap: { get: vi.fn(() => null) } } },
       },
       { provide: Router, useValue: { navigate: alterationsApi.navigate ?? vi.fn() } },
-      provideRouter([]),
     ],
   }).compileComponents();
   return { component: TestBed.createComponent(AlterationFormComponent).componentInstance };

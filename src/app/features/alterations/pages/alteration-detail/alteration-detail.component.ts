@@ -129,6 +129,7 @@ export class AlterationDetailComponent {
       .subscribe({
         next: () => {
           this.feedback.set('Alteration status updated.');
+          this.updatingStatus.set(false);
           this.load();
         },
         error: (error: unknown) =>

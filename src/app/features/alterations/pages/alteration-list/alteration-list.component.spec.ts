@@ -97,6 +97,7 @@ describe('AlterationListComponent', () => {
     expect(component.loading()).toBe(true);
 
     second.next(pageOf([createAlteration({ alterationId: 'ALT-CURRENT' })]));
+    second.complete();
     expect(component.alterations()[0]?.alterationId).toBe('ALT-CURRENT');
     expect(component.loading()).toBe(false);
   });
