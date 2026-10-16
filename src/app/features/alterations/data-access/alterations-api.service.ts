@@ -20,8 +20,8 @@ export class AlterationsApiService {
     let params = new HttpParams();
     if (query.page !== undefined) params = params.set('page', query.page);
     if (query.limit !== undefined) params = params.set('limit', query.limit);
-    if (query.customerId) params = params.set('customerId', query.customerId);
-    if (query.orderId) params = params.set('orderId', query.orderId);
+    if (query.customerId?.trim()) params = params.set('customerId', query.customerId.trim());
+    if (query.orderId?.trim()) params = params.set('orderId', query.orderId.trim());
     if (query.status) params = params.set('status', query.status);
     if (query.sortBy) params = params.set('sortBy', query.sortBy);
     if (query.sortOrder) params = params.set('sortOrder', query.sortOrder);
@@ -45,9 +45,6 @@ export class AlterationsApiService {
   }
 
   createBill(alterationId: string): Observable<Order> {
-    return this.api.post<Order, undefined>(
-      `alterations/${encodeURIComponent(alterationId)}/bill`,
-      undefined,
-    );
+    return this.api.postWithoutBody<Order>(`alterations/${encodeURIComponent(alterationId)}/bill`);
   }
 }

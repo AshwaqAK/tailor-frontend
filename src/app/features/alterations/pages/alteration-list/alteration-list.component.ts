@@ -204,7 +204,7 @@ export class AlterationListComponent {
   }
 
   private navigationFeedback(): string | null {
-    const state = history.state as { feedback?: unknown };
+    const state = (history.state ?? {}) as { feedback?: unknown };
     return typeof state.feedback === 'string' ? state.feedback : null;
   }
 }

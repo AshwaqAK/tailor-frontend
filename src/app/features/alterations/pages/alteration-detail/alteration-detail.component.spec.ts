@@ -27,7 +27,10 @@ describe('AlterationDetailComponent', () => {
     expect(content).toContain('CUS-000001');
     expect(content).toContain('ORD-000002');
     expect(content).toContain('item-1');
-    expect(content).toContain('Replace zipper');
+    expect(
+      (fixture.nativeElement.querySelector('#alteration-detail-description') as HTMLTextAreaElement)
+        .value,
+    ).toBe('Replace zipper');
     expect(content).toContain('₹125.50');
     expect(content).toContain('Not completed');
     expect(fixture.nativeElement.querySelector('#alteration-detail-charge')).toBeNull();
@@ -199,6 +202,7 @@ describe('AlterationDetailComponent', () => {
     expect(update.mock.calls[0][1]).not.toHaveProperty('charge');
 
     const failingUpdate = vi.fn(() => throwError(() => new ApiError('Update rejected', 409)));
+    TestBed.resetTestingModule();
     const failing = await configure(
       { getByAlterationId: vi.fn(() => of(createAlteration())), update: failingUpdate },
       'ALT-000123',
@@ -225,6 +229,7 @@ async function configure(
   await TestBed.configureTestingModule({
     imports: [AlterationDetailComponent],
     providers: [
+      provideRouter([]),
       {
         provide: AlterationsApiService,
         useValue: {
@@ -238,7 +243,6 @@ async function configure(
         provide: ActivatedRoute,
         useValue: { snapshot: { paramMap: { get: () => alterationId } } },
       },
-      provideRouter([]),
     ],
   }).compileComponents();
   const fixture = TestBed.createComponent(AlterationDetailComponent);

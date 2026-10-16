@@ -22,6 +22,15 @@ export class ApiService {
       .pipe(map((response) => response.data));
   }
 
+  postWithoutBody<T>(path: string): Observable<T> {
+    return this.http
+      .request<ApiSuccess<T>>('POST', this.url(path), {
+        withCredentials: true,
+        body: undefined,
+      })
+      .pipe(map((response) => response.data));
+  }
+
   patch<T, TBody = unknown>(path: string, body: TBody): Observable<T> {
     return this.http
       .patch<ApiSuccess<T>>(this.url(path), body, { withCredentials: true })

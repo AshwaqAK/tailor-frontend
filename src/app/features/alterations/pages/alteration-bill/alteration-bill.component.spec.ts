@@ -195,6 +195,7 @@ async function configure(
   await TestBed.configureTestingModule({
     imports: [AlterationBillComponent],
     providers: [
+      provideRouter([]),
       { provide: AlterationsApiService, useValue: { getByAlterationId } },
       { provide: OrdersApiService, useValue: { getByOrderId } },
       {
@@ -215,7 +216,6 @@ async function configure(
           },
         },
       },
-      provideRouter([]),
     ],
   }).compileComponents();
 }
